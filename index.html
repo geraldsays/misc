@@ -1,0 +1,2443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Triple-Engine V2 - Draw Trap Aware</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: linear-gradient(135deg, #0f0f1e 0%, #1a1a2e 100%);
+  color: #e0e0e0;
+  min-height: 100vh;
+  padding-bottom: 40px;
+}
+
+.header {
+  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+  padding: 16px;
+  text-align: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+}
+
+.header h1 {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.header .subtitle {
+  font-size: 12px;
+  opacity: 0.9;
+}
+
+.badges {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.badge {
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.badge-goals { background: #f39c12; color: #000; }
+.badge-xg { background: #3498db; color: #fff; }
+.badge-hybrid { background: #2ecc71; color: #000; }
+
+.tabs {
+  display: flex;
+  background: #16213e;
+  position: sticky;
+  top: var(--hdrH, 100px);
+  z-index: 99;
+  overflow-x: auto;
+  border-bottom: 2px solid #2a5298;
+}
+
+.tab {
+  flex: 1;
+  padding: 12px 8px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  color: #888;
+  border-bottom: 3px solid transparent;
+  transition: all 0.2s;
+}
+
+.tab.active {
+  color: #2ecc71;
+  border-bottom-color: #2ecc71;
+}
+
+.container {
+  padding: 16px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.section {
+  display: none;
+}
+
+.section.active {
+  display: block;
+  animation: fadeIn 0.3s;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.card {
+  background: #1a1a2e;
+  border: 1px solid #2a3a5e;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.card-title {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: #2ecc71;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.form-group {
+  margin-bottom: 12px;
+}
+
+label {
+  display: block;
+  font-size: 12px;
+  color: #aaa;
+  margin-bottom: 4px;
+}
+
+input, select {
+  width: 100%;
+  padding: 10px 12px;
+  background: #0f0f1e;
+  border: 1px solid #2a3a5e;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 14px;
+}
+
+input:focus, select:focus {
+  outline: none;
+  border-color: #2ecc71;
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.grid-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+
+.team-header {
+  font-size: 15px;
+  font-weight: 700;
+  padding: 8px 0;
+  margin-bottom: 8px;
+  border-bottom: 2px solid;
+}
+
+.home-header { color: #3498db; border-color: #3498db; }
+.away-header { color: #e74c3c; border-color: #e74c3c; }
+
+.btn {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 10px;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+  color: #000;
+}
+
+.btn-primary:active { transform: scale(0.98); }
+
+.btn-secondary {
+  background: #2a3a5e;
+  color: #fff;
+}
+
+.btn-danger {
+  background: #e74c3c;
+  color: #fff;
+}
+
+.btn-small {
+  padding: 8px 14px;
+  font-size: 12px;
+  width: auto;
+}
+
+.results-container {
+  display: none;
+}
+
+.results-container.show { display: block; }
+
+.summary-box {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border: 2px solid #2ecc71;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.summary-item {
+  padding: 12px 0;
+  border-bottom: 1px solid #2a3a5e;
+}
+
+.summary-item:last-child { border-bottom: none; }
+
+.summary-number {
+  color: #2ecc71;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.summary-check { color: #2ecc71; font-size: 16px; }
+
+.prediction-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  font-size: 13px;
+}
+
+.method-label {
+  font-weight: 600;
+  min-width: 90px;
+}
+
+.method-goals { color: #f39c12; }
+.method-xg { color: #3498db; }
+.method-hybrid { color: #2ecc71; font-weight: 700; }
+.method-refined { color: #c39bd3; font-weight: 700; }
+
+.score-value {
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.big-score {
+  text-align: center;
+  padding: 16px;
+  background: rgba(46, 204, 113, 0.1);
+  border-radius: 10px;
+  margin: 12px 0;
+}
+
+.big-score .score {
+  font-size: 32px;
+  font-weight: 800;
+  color: #2ecc71;
+}
+
+.big-score .label {
+  font-size: 11px;
+  color: #888;
+  margin-top: 4px;
+}
+
+.confidence-stars {
+  text-align: center;
+  padding: 10px;
+  border-radius: 8px;
+  margin: 10px 0;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.conf-high { background: rgba(46, 204, 113, 0.2); color: #2ecc71; }
+.conf-medium { background: rgba(243, 156, 18, 0.2); color: #f39c12; }
+.conf-low { background: rgba(231, 76, 60, 0.2); color: #e74c3c; }
+
+.market-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.market-item {
+  background: #0f0f1e;
+  border-radius: 8px;
+  padding: 10px;
+  text-align: center;
+}
+
+.market-name {
+  font-size: 11px;
+  color: #888;
+  margin-bottom: 4px;
+}
+
+.market-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: #2ecc71;
+}
+
+.market-odds {
+  font-size: 11px;
+  color: #666;
+}
+
+.scoreline-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  font-size: 12px;
+}
+
+.scoreline-table th {
+  text-align: left;
+  padding: 8px 4px;
+  color: #888;
+  border-bottom: 1px solid #2a3a5e;
+  font-size: 11px;
+}
+
+.scoreline-table td {
+  padding: 8px 4px;
+  border-bottom: 1px solid #1a1a2e;
+}
+
+.value-bet-alert {
+  background: linear-gradient(135deg, rgba(46, 204, 113, 0.2) 0%, rgba(39, 174, 96, 0.1) 100%);
+  border: 2px solid #2ecc71;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.no-value-alert {
+  background: rgba(231, 76, 60, 0.1);
+  border: 2px solid #e74c3c;
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+}
+
+.odds-input-group {
+  background: #0f0f1e;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 10px;
+}
+
+.history-item {
+  background: #1a1a2e;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 8px;
+  border-left: 4px solid #2a3a5e;
+}
+
+.history-item.won { border-left-color: #2ecc71; }
+.history-item.lost { border-left-color: #e74c3c; }
+.history-item.pending { border-left-color: #f39c12; }
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid #2a3a5e;
+}
+
+.stat-row:last-child { border-bottom: none; }
+
+.stat-label { color: #888; font-size: 13px; }
+.stat-value { font-weight: 700; font-size: 14px; }
+
+.positive { color: #2ecc71; }
+.negative { color: #e74c3c; }
+
+.finishing-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-left: 6px;
+}
+
+.finishing-clinical { background: rgba(46, 204, 113, 0.3); color: #2ecc71; }
+.finishing-good { background: rgba(52, 152, 219, 0.3); color: #3498db; }
+.finishing-average { background: rgba(243, 156, 18, 0.3); color: #f39c12; }
+.finishing-poor { background: rgba(231, 76, 60, 0.3); color: #e74c3c; }
+
+.divider {
+  height: 1px;
+  background: #2a3a5e;
+  margin: 16px 0;
+}
+
+.info-text {
+  font-size: 11px;
+  color: #666;
+  margin-top: 6px;
+  line-height: 1.4;
+}
+
+.floating-action {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #2ecc71;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  box-shadow: 0 4px 12px rgba(46, 204, 113, 0.4);
+  cursor: pointer;
+  z-index: 50;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
+}
+
+.empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+
+.toast {
+  position: fixed;
+  bottom: 90px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: #2ecc71;
+  color: #000;
+  padding: 12px 24px;
+  border-radius: 24px;
+  font-weight: 600;
+  font-size: 13px;
+  transition: transform 0.3s;
+  z-index: 200;
+}
+
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+.result-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.result-btn {
+  padding: 10px;
+  border-radius: 8px;
+  border: 2px solid #2a3a5e;
+  background: transparent;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.result-btn.selected-win { background: #2ecc71; border-color: #2ecc71; color: #000; }
+.result-btn.selected-loss { background: #e74c3c; border-color: #e74c3c; }
+
+.agreement-icons {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin: 10px 0;
+}
+
+.agreement-icon {
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.agree { background: rgba(46, 204, 113, 0.2); color: #2ecc71; }
+.disagree { background: rgba(102, 102, 102, 0.2); color: #666; }
+
+.slider-container {
+  margin: 16px 0;
+}
+
+.slider-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #888;
+  margin-bottom: 6px;
+}
+
+input[type="range"] {
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: #2a3a5e;
+  outline: none;
+  -webkit-appearance: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #2ecc71;
+  cursor: pointer;
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🎯 Triple-Engine Analyzer</h1>
+  <div class="subtitle">xG + Goals + Hybrid + Refined + Price Check + Advisor</div>
+  <div class="badges">
+    <span class="badge badge-goals">⚽ Goals</span>
+    <span class="badge badge-xg">📊 xG</span>
+    <span class="badge badge-hybrid">🎯 Hybrid</span>
+    <span class="badge badge-hybrid">🚀 Refined</span>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" data-tab="analyze">Analyze</div>
+  <div class="tab" data-tab="refined">Refined</div>
+  <div class="tab" data-tab="pricecheck">Price Check</div>
+  <div class="tab" data-tab="twolab">2.00 Lab</div>
+  <div class="tab" data-tab="advisor">Advisor</div>
+  <div class="tab" data-tab="results">Results</div>
+  <div class="tab" data-tab="history">History</div>
+  <div class="tab" data-tab="settings">Settings</div>
+</div>
+
+<div class="container">
+
+  <!-- ANALYZE TAB -->
+  <div class="section active" id="analyze">
+    
+    <div class="card">
+      <div class="card-title">⚽ Match Info</div>
+      <div class="form-group">
+        <label>Home Team</label>
+        <input type="text" id="homeTeam" placeholder="e.g. Arsenal">
+      </div>
+      <div class="form-group">
+        <label>Away Team</label>
+        <input type="text" id="awayTeam" placeholder="e.g. Chelsea">
+      </div>
+      <div class="grid-2">
+        <div class="form-group">
+          <label>Competition</label>
+          <select id="competition">
+            <option value="league">League match</option>
+            <option value="cup">Domestic cup</option>
+            <option value="intl">European / international</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Games Played</label>
+          <input type="number" id="gamesPlayed" value="12" min="1">
+        </div>
+        <div class="form-group">
+          <label>League</label>
+          <select id="league">
+            <option value="epl">Premier League</option>
+            <option value="laliga">La Liga</option>
+            <option value="bundesliga">Bundesliga</option>
+            <option value="seriea">Serie A</option>
+            <option value="gpl">Ghana Premier</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-top:8px;border-top:1px solid #2a3a5e;padding-top:10px;">
+        <div style="font-size:12px;color:#c39bd3;font-weight:700;margin-bottom:6px;">🚀 Refined engine teams (auto-matched from the names above; adjust if needed)</div>
+        <div class="form-group"><label>Refined league</label><select id="rfaLeague" onchange="rfaSync(false)"></select></div>
+        <div class="grid-2">
+          <div class="form-group"><label>Home team (ratings)</label><select id="rfaHome"></select></div>
+          <div class="form-group"><label>Away team (ratings)</label><select id="rfaAway"></select></div>
+        </div>
+        <div id="rfaStatus" style="font-size:12px;color:#888;"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="team-header home-header">🏠 HOME TEAM STATS</div>
+      <div class="grid-2">
+        <div class="form-group">
+          <label>xG per game</label>
+          <input type="number" id="homeXg" step="0.01" placeholder="1.73">
+        </div>
+        <div class="form-group">
+          <label>Goals per game</label>
+          <input type="number" id="homeGoals" step="0.01" placeholder="1.60">
+        </div>
+        <div class="form-group">
+          <label>xGA per game</label>
+          <input type="number" id="homeXga" step="0.01" placeholder="0.51">
+        </div>
+        <div class="form-group">
+          <label>Conceded/game</label>
+          <input type="number" id="homeConceded" step="0.01" placeholder="0.50">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Last 5 Form (e.g. WWDWL)</label>
+        <input type="text" id="homeForm" maxlength="5" placeholder="WWDWL" style="text-transform:uppercase">
+      </div>
+      <div class="grid-2">
+        <div class="form-group">
+          <label>Injuries</label>
+          <select id="homeInjury">
+            <option value="0">None</option>
+            <option value="1">Minor</option>
+            <option value="2">Major</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Clean Sheet %</label>
+          <input type="number" id="homeCS" placeholder="71" min="0" max="100">
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="team-header away-header">✈️ AWAY TEAM STATS</div>
+      <div class="grid-2">
+        <div class="form-group">
+          <label>xG per game</label>
+          <input type="number" id="awayXg" step="0.01" placeholder="1.84">
+        </div>
+        <div class="form-group">
+          <label>Goals per game</label>
+          <input type="number" id="awayGoals" step="0.01" placeholder="1.90">
+        </div>
+        <div class="form-group">
+          <label>xGA per game</label>
+          <input type="number" id="awayXga" step="0.01" placeholder="1.16">
+        </div>
+        <div class="form-group">
+          <label>Conceded/game</label>
+          <input type="number" id="awayConceded" step="0.01" placeholder="1.15">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Last 5 Form (e.g. LWDLL)</label>
+        <input type="text" id="awayForm" maxlength="5" placeholder="LWDLL" style="text-transform:uppercase">
+      </div>
+      <div class="grid-2">
+        <div class="form-group">
+          <label>Injuries</label>
+          <select id="awayInjury">
+            <option value="0">None</option>
+            <option value="1">Minor</option>
+            <option value="2">Major</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>League Position Gap</label>
+          <input type="number" id="posGap" placeholder="0" title="Home position minus away position">
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">💰 Bookmaker Odds</div>
+      <div class="grid-3">
+        <div class="form-group">
+          <label>Home Win</label>
+          <input type="number" id="oddsHome" step="0.01" placeholder="2.30">
+        </div>
+        <div class="form-group">
+          <label>Draw</label>
+          <input type="number" id="oddsDraw" step="0.01" placeholder="3.20">
+        </div>
+        <div class="form-group">
+          <label>Away Win</label>
+          <input type="number" id="oddsAway" step="0.01" placeholder="3.50">
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="form-group">
+          <label>BTTS Yes</label>
+          <input type="number" id="oddsBttsYes" step="0.01" placeholder="1.85">
+        </div>
+        <div class="form-group">
+          <label>Over 2.5</label>
+          <input type="number" id="oddsOver25" step="0.01" placeholder="2.10">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Stake (GHS)</label>
+        <input type="number" id="stakeAmount" value="100" min="1">
+      </div>
+    </div>
+
+    <button class="btn btn-primary" onclick="runAnalysis()">🎯 RUN TRIPLE-ENGINE ANALYSIS</button>
+    <button class="btn btn-secondary" onclick="clearForm()">Clear Form</button>
+  </div>
+
+  <!-- REFINED TAB -->
+  <div class="section" id="refined">
+    <div class="card">
+      <div class="card-title">🚀 Refined Engine (team ratings)</div>
+      <div class="form-group"><label>League</label><select id="rfLeague"></select></div>
+      <div class="grid-2">
+        <div class="form-group"><label>Home Team</label><select id="rfHome"></select></div>
+        <div class="form-group"><label>Away Team</label><select id="rfAway"></select></div>
+      </div>
+      <div style="font-size:12px;color:#888;margin:4px 0 8px;">Optional: closing odds, to compare with the market</div>
+      <div class="grid-3">
+        <div class="form-group"><label>Home</label><input type="number" id="rfOddsH" step="0.01" placeholder="2.10"></div>
+        <div class="form-group"><label>Draw</label><input type="number" id="rfOddsD" step="0.01" placeholder="3.40"></div>
+        <div class="form-group"><label>Away</label><input type="number" id="rfOddsA" step="0.01" placeholder="3.60"></div>
+      </div>
+      <div class="grid-2">
+        <div class="form-group"><label>Over 2.5</label><input type="number" id="rfOddsO" step="0.01" placeholder="1.85"></div>
+        <div class="form-group"><label>Under 2.5</label><input type="number" id="rfOddsU" step="0.01" placeholder="1.95"></div>
+      </div>
+      <button class="btn btn-primary" onclick="runRefined()">Run Refined Analysis</button>
+    </div>
+    <div id="rfOut"></div>
+    <div class="card">
+      <div class="card-title">ℹ️ About this engine</div>
+      <div style="font-size:12px;line-height:1.6;color:#aaa;">
+        Needs no typed-in stats. It uses attack and defence ratings for every team, learned from about 27,000 matches (weighted towards recent games), with a calibration step so the percentages are honest.<br><br>
+        <strong>Backtest (4,102 matches, 5 big leagues, unseen seasons):</strong> 52.7% right on win/draw/loss (bookmakers 54.7%), 57.4% on over/under 2.5 (bookmakers 59.1%), 55.6% on BTTS (guessing 54.8%).<br><br>
+        Covers the teams that played in 2025/26. Teams promoted since then are not listed, and ratings do not know about injuries, lineups or transfers. Refresh the ratings after each season.
+      </div>
+    </div>
+  </div>
+
+  <!-- PRICE CHECK TAB -->
+  <div class="section" id="pricecheck">
+    <div class="card">
+      <div class="card-title">⚖️ Price Check: your bookmaker vs the sharp price</div>
+      <div style="font-size:12px;color:#888;line-height:1.5;margin-bottom:10px;">Enter your bookmaker's odds and a sharp reference (for example Pinnacle). The app removes the margin from the reference and shows how far your price is above or below fair. Log paper bets to find out, over time, whether your bookmaker is ever beatable.</div>
+      <div class="form-group"><label>Match</label><input type="text" id="pcLabel" placeholder="Arsenal vs Chelsea"></div>
+      <div class="grid-2" style="margin-bottom:8px;">
+        <button class="btn btn-primary" id="pcBtn1x2" onclick="pcSetMarket('1x2')">1X2</button>
+        <button class="btn" id="pcBtnOu" onclick="pcSetMarket('ou')">Over/Under 2.5</button>
+      </div>
+      <div style="font-size:12px;color:#aaa;margin:6px 0 2px;">Your bookmaker</div>
+      <div id="pcRow1x2"><div class="grid-3">
+        <div class="form-group"><label>Home</label><input type="number" id="pcMyH" step="0.01"></div>
+        <div class="form-group"><label>Draw</label><input type="number" id="pcMyD" step="0.01"></div>
+        <div class="form-group"><label>Away</label><input type="number" id="pcMyA" step="0.01"></div></div>
+        <div style="font-size:12px;color:#aaa;margin:6px 0 2px;">Reference (sharp)</div>
+        <div class="grid-3">
+        <div class="form-group"><label>Home</label><input type="number" id="pcRefH" step="0.01"></div>
+        <div class="form-group"><label>Draw</label><input type="number" id="pcRefD" step="0.01"></div>
+        <div class="form-group"><label>Away</label><input type="number" id="pcRefA" step="0.01"></div></div></div>
+      <div id="pcRowOu" style="display:none"><div class="grid-2">
+        <div class="form-group"><label>Over 2.5</label><input type="number" id="pcMyO" step="0.01"></div>
+        <div class="form-group"><label>Under 2.5</label><input type="number" id="pcMyU" step="0.01"></div></div>
+        <div style="font-size:12px;color:#aaa;margin:6px 0 2px;">Reference (sharp)</div>
+        <div class="grid-2">
+        <div class="form-group"><label>Over 2.5</label><input type="number" id="pcRefO" step="0.01"></div>
+        <div class="form-group"><label>Under 2.5</label><input type="number" id="pcRefU" step="0.01"></div></div></div>
+      <div class="form-group"><label>Paper stake</label><input type="number" id="pcStake" value="100"></div>
+      <button class="btn btn-primary" onclick="pcCheck()">Check Price</button>
+    </div>
+    <div id="pcOut"></div>
+    <div id="pcLogBox"></div>
+    <div class="card">
+      <div class="card-title">📡 Fetch reference odds (optional)</div>
+      <div style="font-size:12px;color:#888;line-height:1.5;margin-bottom:8px;">Needs your own free key from an odds service such as The Odds API. The key stays on this device. If Pinnacle is not in your plan, the app falls back to the average of the books it returns and says so. Free plans have small monthly limits: each fetch uses about 1 request. I could not test this live call, so if it fails, type the odds in by hand.</div>
+      <div class="form-group"><label>API key</label><input type="text" id="pcApiKey" onchange="pcKeySave()" placeholder="paste key"></div>
+      <div class="form-group"><label>League</label><select id="pcSport">
+        <option value="soccer_epl">England - Premier League</option><option value="soccer_efl_champ">England - Championship</option>
+        <option value="soccer_spain_la_liga">Spain - La Liga</option><option value="soccer_germany_bundesliga">Germany - Bundesliga</option>
+        <option value="soccer_italy_serie_a">Italy - Serie A</option><option value="soccer_france_ligue_one">France - Ligue 1</option>
+        <option value="soccer_netherlands_eredivisie">Netherlands - Eredivisie</option><option value="soccer_portugal_primeira_liga">Portugal - Primeira Liga</option>
+        <option value="soccer_uefa_champs_league">Champions League</option></select></div>
+      <button class="btn btn-primary" onclick="pcFetch()">Fetch upcoming matches</button>
+      <div id="pcFetchOut" style="margin-top:8px;"></div>
+    </div>
+  </div>
+
+
+  <div class="section" id="twolab">
+    <div class="card">
+      <div class="card-title">💣 The 2.00 Trap - CSV Proven</div>
+      <div style="font-size:13px;line-height:1.6;">
+        <strong>At 1.85-2.15 odds (3,661 games): 46.8% accuracy</strong><br>
+        Home @2.00: 2,554 games, 46.4% win. When fails: 55.4% Draw, 44.6% Away<br>
+        Away @2.00: 1,107 games, 48.6% win. When fails: 53.6% Draw, 46.4% Home<br>
+        Actual distribution at 2.00: H 38.6% D 30.1% A 31.2%<br><br>
+        <strong>Fix:</strong> Home @2.00 -> 1X (Home or Draw) covers 76.1%<br>
+        Away @2.00 -> X2 (Away or Draw) covers 76.2%
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">📊 Leagues at 2.00 - Good vs Avoid</div>
+      <table class="scoreline-table">
+        <tr><th>League</th><th>Acc @2.00</th><th>Verdict</th><th>Tilt</th></tr>
+        <tr><td>SP1 Spain</td><td style="color:#2ecc71">52.7%</td><td>ONLY GOOD</td><td>Home-Draw</td></tr>
+        <tr><td>N1 Netherlands</td><td>49.5%</td><td>Borderline</td><td>Home-Draw</td></tr>
+        <tr><td>E1 Championship</td><td>49.0%</td><td>Borderline but worst overall 46.4%</td><td>50/50</td></tr>
+        <tr><td>T1 Turkey</td><td>48.3%</td><td>Caution</td><td>Home-Draw</td></tr>
+        <tr><td>I1 Italy</td><td>47.7%</td><td>Caution</td><td>Home-Draw</td></tr>
+        <tr><td>E0 Premier L</td><td>47.6%</td><td>Caution</td><td>Home-Draw</td></tr>
+        <tr><td>B1 Belgium</td><td>47.3%</td><td>Caution</td><td>Home-Draw</td></tr>
+        <tr><td>F1 France</td><td>46.8%</td><td>Caution</td><td>Mixed</td></tr>
+        <tr><td>P1 Portugal</td><td style="color:#e74c3c">44.2%</td><td>AVOID</td><td>Home-Draw 63%</td></tr>
+        <tr><td>SC0 Scotland</td><td style="color:#e74c3c">43.7%</td><td>AVOID</td><td>Home-Draw 59%</td></tr>
+        <tr><td>D1 Germany2</td><td style="color:#e74c3c">41.8%</td><td>AVOID</td><td>Home-Draw</td></tr>
+        <tr><td>G1 Greece</td><td style="color:#e74c3c">37.7%</td><td>WORST - AVOID</td><td>Home-Draw</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-title">🧠 Edge is Backwards - How to Win</div>
+      <div style="font-size:13px;line-height:1.6;">
+        Market 5pct over model: 62.9% acc +0.6% ROI (n=2613) - BEST<br>
+        Market 0-5pct over model: 58.0% acc +1.2% ROI (n=4816) - BEST<br>
+        Model 0-5pct over market: 51.2% -2.9%<br>
+        Model 5-10pct over: 44.8% -5.1%<br>
+        Model 10pct over market: 39.9% -6.6% (n=1463) - WORST TRAP<br><br>
+        Rule: Profitable only when market >= model and odds &lt;1.8.<br>
+        Profit Zone: &lt;1.5 odds 76.7% +0.5% ROI, 1.5-1.8 60.3% +0.1% ROI.
+      </div>
+    </div>
+  </div>
+
+  <!-- ADVISOR TAB -->
+  <div class="section" id="advisor"><div id="advBox"></div></div>
+
+  <!-- RESULTS TAB -->
+  <div class="section" id="results">
+    <div id="resultsEmpty" class="empty-state">
+      <div class="icon">📊</div>
+      <div>No analysis yet</div>
+      <div style="font-size:12px; margin-top:8px;">Fill in the Analyze tab and run predictions</div>
+    </div>
+    <div id="resultsContent" style="display:none;"></div>
+  </div>
+
+  <!-- HISTORY TAB -->
+  <div class="section" id="history">
+    <div class="card">
+      <div class="card-title">📈 Performance Summary</div>
+      <div id="statsContent">
+        <div class="stat-row">
+          <span class="stat-label">Total Bets Tracked</span>
+          <span class="stat-value" id="totalBets">0</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Win Rate</span>
+          <span class="stat-value" id="winRate">-</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Total Profit</span>
+          <span class="stat-value" id="totalProfit">GHS 0</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">ROI</span>
+          <span class="stat-value" id="roi">-</span>
+        </div>
+      </div>
+    </div>
+    <div id="historyList"></div>
+  </div>
+
+  <!-- SETTINGS TAB -->
+  <div class="section" id="settings">
+    <div class="card">
+      <div class="card-title">⚙️ Hybrid Model Weights</div>
+      <div class="slider-container">
+        <div class="slider-labels">
+          <span>Goals Focus</span>
+          <span id="weightDisplay">xG 65% / Goals 35%</span>
+          <span>xG Focus</span>
+        </div>
+        <input type="range" id="xgWeight" min="50" max="80" value="65" oninput="updateWeightDisplay()">
+      </div>
+      <div class="info-text">
+        Early season (< 10 games): Auto 50/50<br>
+        Mid season (10-20 games): Uses this slider<br>
+        Late season (20+ games): Auto 70/30
+      </div>
+      <button class="btn btn-primary" onclick="saveWeights()" style="margin-top:16px;">Save Weights</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📖 Method Guide</div>
+      <div style="font-size:13px; line-height:1.8;">
+        <strong style="color:#f39c12;">⚽ Goals-Only:</strong> Uses actual scoring. Good early season.<br><br>
+        <strong style="color:#3498db;">📊 xG-Only:</strong> Uses chance quality. Removes luck factor.<br><br>
+        <strong style="color:#2ecc71;">🎯 Hybrid:</strong> Blends xG and goals (finishing shown for info only). Backtest: about 49-52% correct on win/draw/loss.<br><br>
+        <strong style="color:#9b59b6;">🚀 Refined:</strong> Team ratings from 27,000 matches, calibrated. Most accurate engine here: about 52-53% correct on win/draw/loss.
+      </div>
+    </div>
+
+    
+    <div class="card">
+      <div class="card-title">💱 Currency & Display</div>
+      <div class="grid-2">
+        <div class="form-group">
+          <label>Currency</label>
+          <select id="currencySelect" onchange="setCurrency(this.value)">
+            <option value="GHS">GHS - Ghana Cedi</option>
+            <option value="USD">USD - US Dollar</option>
+            <option value="EUR">EUR - Euro</option>
+            <option value="NGN">NGN - Naira</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>USD Rate (1 USD = ? GHS) <button id="fetchRateBtn" class="btn btn-secondary btn-small" style="display:inline-block;width:auto;margin-left:8px;padding:4px 10px;font-size:11px;" onclick="fetchLiveRate()">Fetch live USD/GHS</button></label>
+          <input type="number" id="usdRate" value="15.5" step="0.1" onchange="saveCurrencyRate()">
+        </div>
+      </div>
+      <div id="rateStatus" style="font-size:11px;color:#2ecc71;margin-top:4px;"></div>
+      <div class="form-group" style="margin-top:8px;">
+        <label><input type="checkbox" id="showDCComparison" onchange="toggleDCComparison(this.checked)" style="width:auto;display:inline-block;" checked> Show Single vs Double Chance win% comparison</label>
+      </div>
+      <div class="form-group" style="margin-top:8px;">
+        <label><input type="checkbox" id="autoDoubleChance" onchange="toggleAutoDC(this.checked)" style="width:auto;display:inline-block;"> Auto-suggest Double Chance at 2.00 (76% vs 46%)</label>
+      </div>
+      <div style="font-size:11px;color:#888;margin-top:6px;">When enabled, any pick at 1.85-2.15 automatically shows 1X / X2 alternative. GHS is default from your CSV. Rate used only for display, stored profit stays in base currency.</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🗑️ Data Management</div>
+      <div id="bkStatus" style="font-size:12px;color:#888;margin-bottom:8px;line-height:1.5;"></div>
+      <textarea id="bkBox" rows="4" placeholder="Backup text appears here. To restore, paste a backup here and press Restore." style="width:100%;background:#16213e;color:#ddd;border:1px solid #2a3a5e;border-radius:8px;padding:8px;font-size:12px;"></textarea>
+      <div class="grid-2" style="margin-top:8px;">
+        <button class="btn btn-primary" onclick="bkExport()">Create + copy backup</button>
+        <button class="btn" onclick="bkImport()">Restore from box</button>
+      </div>
+      <button class="btn btn-danger" onclick="clearHistory()" style="margin-top:8px;">Clear All History</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== STORAGE =====
+let appData = {
+  weights: { xg: 0.65, goals: 0.35 },
+  history: [],
+  stats: { hybridWins: 0, goalsWins: 0, xgWins: 0, total: 0 },
+  currency: 'GHS'
+};
+
+function loadData() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('bettingAppData') || 'null');
+    if (saved) appData = saved;
+  } catch(e) {}
+  updateStatsDisplay();
+  updateHistoryDisplay();
+}
+
+// Note: Using in-memory storage since localStorage isn't available in artifacts
+let memoryStorage = {};
+let storageOk = null;
+function saveData() {
+  memoryStorage['bettingAppData'] = JSON.stringify(appData);
+  try { localStorage.setItem('bettingAppData', memoryStorage['bettingAppData']); storageOk = true; } catch (e) { storageOk = false; }
+  try { bkStatus(); } catch (e) {}
+}
+function loadFromMemory() {
+  try {
+    let saved = null;
+    try { saved = localStorage.getItem('bettingAppData'); } catch (e) { saved = null; }
+    saved = saved || memoryStorage['bettingAppData'];
+    if (saved) { const p = JSON.parse(saved); if (p && Array.isArray(p.history)) appData = p; }
+  } catch(e) {}
+}
+
+const REF = {"cal":{"A":{"th":[1.13012,0.07458,-0.04612],"tho":[0.8495,0.0039],"thb":[0.81519,0.05321]},"B":{"th":[1.28555,0.03947,0.02954],"tho":[0.74939,0.08597],"thb":[0.46536,0.00875]}},"rho":-0.04,"leagues":{"E0":{"name":"England - Premier League","grp":"A","mu":0.2969,"ha":0.1998,"scale":0.9775,"teams":{"Arsenal":[0.2888,0.479],"Aston Villa":[0.089,0.0783],"Bournemouth":[0.1678,0.0713],"Brentford":[0.1417,0.0171],"Brighton":[0.0637,0.1149],"Burnley":[-0.3012,-0.2476],"Chelsea":[0.1853,0.0382],"Crystal Palace":[0.0552,0.0137],"Everton":[-0.0915,0.0579],"Fulham":[-0.0694,0.0457],"Leeds":[0.0635,0.0562],"Liverpool":[0.2496,0.1056],"Man City":[0.3355,0.2511],"Man United":[0.1978,0.1287],"Newcastle":[0.1331,0.0226],"Nott'm Forest":[-0.0452,0.008],"Sunderland":[-0.1703,0.036],"Tottenham":[-0.0593,0.0149],"West Ham":[-0.0668,-0.0646],"Wolves":[-0.2781,-0.102]}},"E1":{"name":"England - Championship","grp":"B","mu":0.0949,"ha":0.1964,"scale":1.0285,"teams":{"Birmingham":[-0.0065,0.0619],"Blackburn":[-0.2409,0.0592],"Bristol City":[0.0041,-0.0477],"Charlton":[-0.1958,-0.0428],"Coventry":[0.3107,0.1316],"Derby":[-0.003,-0.0045],"Hull":[0.0385,-0.091],"Ipswich":[0.2649,0.1113],"Leicester":[0.0262,-0.0592],"Middlesbrough":[0.1944,0.1101],"Millwall":[0.0408,0.1348],"Norwich":[0.1211,0.0235],"Oxford":[-0.2,-0.0143],"Portsmouth":[-0.0823,-0.0607],"Preston":[-0.0958,-0.0881],"QPR":[0.0125,-0.1324],"Sheffield United":[0.108,-0.0403],"Sheffield Weds":[-0.4012,-0.3048],"Southampton":[0.3298,0.0347],"Stoke":[-0.1381,-0.0364],"Swansea":[-0.0076,-0.0529],"Watford":[-0.0517,-0.1147],"West Brom":[-0.0801,0.1266],"Wrexham":[0.0475,-0.1256]}},"D1":{"name":"Germany - Bundesliga","grp":"A","mu":0.3461,"ha":0.2539,"scale":0.9986,"teams":{"Augsburg":[-0.0748,-0.059],"Bayern Munich":[0.614,0.2115],"Dortmund":[0.2343,0.2517],"Ein Frankfurt":[0.0049,0.0214],"FC Koln":[-0.0239,-0.072],"Freiburg":[-0.073,0.058],"Hamburg":[-0.2018,-0.1123],"Heidenheim":[-0.0897,-0.1542],"Hoffenheim":[0.0915,0.016],"Leverkusen":[0.2612,0.133],"M'gladbach":[-0.1375,0.0145],"Mainz":[0.107,0.0108],"RB Leipzig":[0.2309,0.0284],"St Pauli":[-0.4253,-0.0802],"Stuttgart":[0.2522,0.0685],"Union Berlin":[-0.1505,0.0247],"Werder Bremen":[-0.2082,-0.0199],"Wolfsburg":[-0.0356,-0.081]}},"I1":{"name":"Italy - Serie A","grp":"A","mu":0.1755,"ha":0.1618,"scale":0.9594,"teams":{"Atalanta":[0.3086,0.0836],"Bologna":[0.0323,0.0852],"Cagliari":[-0.064,-0.0896],"Como":[0.2784,0.2526],"Cremonese":[-0.2682,-0.17],"Fiorentina":[0.0273,0.0008],"Genoa":[-0.0755,0.008],"Inter":[0.5153,0.2622],"Juventus":[0.3141,0.3224],"Lazio":[-0.0034,0.113],"Lecce":[-0.2378,-0.1328],"Milan":[0.2267,0.0972],"Napoli":[0.1462,0.2647],"Parma":[-0.2575,-0.0892],"Pisa":[-0.2077,-0.2413],"Roma":[0.2586,0.2221],"Sassuolo":[0.0001,-0.1099],"Torino":[-0.003,-0.1121],"Udinese":[-0.0372,-0.0358],"Verona":[-0.3205,-0.068]}},"SP1":{"name":"Spain - La Liga","grp":"A","mu":0.1664,"ha":0.3218,"scale":0.9803,"teams":{"Alaves":[-0.023,0.0566],"Ath Bilbao":[0.0269,0.1397],"Ath Madrid":[0.24,0.0858],"Barcelona":[0.5612,0.1805],"Betis":[0.1187,0.0943],"Celta":[0.0346,0.036],"Elche":[-0.0486,-0.1372],"Espanol":[-0.1057,-0.0544],"Getafe":[-0.3447,0.1862],"Girona":[-0.0281,-0.0356],"Levante":[0.1,-0.0989],"Mallorca":[-0.0846,-0.0592],"Osasuna":[-0.0209,0.0648],"Oviedo":[-0.2454,-0.1257],"Real Madrid":[0.3783,0.228],"Sevilla":[-0.1978,0.007],"Sociedad":[0.0885,-0.0565],"Valencia":[0.0087,0.0446],"Vallecano":[0.0341,0.0565],"Villarreal":[0.2644,0.0433]}},"F1":{"name":"France - Ligue 1","grp":"A","mu":0.2696,"ha":0.2096,"scale":0.9972,"teams":{"Angers":[-0.3239,-0.0948],"Auxerre":[-0.1638,0.051],"Brest":[-0.0383,-0.0733],"Le Havre":[-0.1813,-0.0623],"Lens":[0.3224,0.1811],"Lille":[0.0819,0.3169],"Lorient":[0.0027,0.011],"Lyon":[0.1399,0.073],"Marseille":[0.303,0.0218],"Metz":[-0.2993,-0.1946],"Monaco":[0.2426,0.0539],"Nantes":[-0.219,0.0272],"Nice":[0.001,-0.0488],"Paris FC":[0.0534,0.003],"Paris SG":[0.4561,0.3396],"Rennes":[0.15,-0.062],"Strasbourg":[0.1295,0.0209],"Toulouse":[-0.0225,0.1616]}},"N1":{"name":"Netherlands - Eredivisie","grp":"B","mu":0.2673,"ha":0.2352,"scale":1.007,"teams":{"AZ Alkmaar":[0.1505,0.1444],"Ajax":[0.1738,0.2122],"Excelsior":[-0.0701,-0.0257],"Feyenoord":[0.2646,0.2353],"For Sittard":[-0.1101,-0.0943],"Go Ahead Eagles":[0.0572,-0.0269],"Groningen":[0.0337,0.1298],"Heerenveen":[0.0619,-0.023],"Heracles":[-0.303,-0.2965],"NAC Breda":[-0.2118,-0.0511],"Nijmegen":[0.2713,0.0364],"PSV Eindhoven":[0.5551,0.1772],"Sparta Rotterdam":[-0.125,-0.0668],"Telstar":[0.0429,-0.1083],"Twente":[0.2147,0.2448],"Utrecht":[0.1099,0.1485],"Volendam":[-0.2469,-0.0781],"Zwolle":[-0.1529,-0.1678]}},"P1":{"name":"Portugal - Primeira Liga","grp":"B","mu":0.1011,"ha":0.189,"scale":1.0003,"teams":{"AVS":[-0.2877,-0.2522],"Alverca":[-0.1456,-0.0857],"Arouca":[0.0556,-0.1222],"Benfica":[0.4979,0.2894],"Casa Pia":[-0.2522,-0.0957],"Estoril":[0.1069,-0.1401],"Estrela":[-0.1441,-0.1185],"Famalicao":[0.0361,0.1925],"Gil Vicente":[0.0269,0.0581],"Guimaraes":[-0.0007,-0.0565],"Moreirense":[-0.1516,-0.0548],"Nacional":[-0.0411,-0.0368],"Porto":[0.2885,0.4461],"Rio Ave":[-0.088,-0.1725],"Santa Clara":[-0.1903,0.1368],"Sp Braga":[0.2601,0.1654],"Sp Lisbon":[0.5819,0.3492],"Tondela":[-0.23,-0.1414]}},"B1":{"name":"Belgium - Pro League","grp":"B","mu":0.2044,"ha":0.1719,"scale":1.0303,"teams":{"Anderlecht":[0.1503,-0.0307],"Antwerp":[-0.0553,0.0186],"Cercle Brugge":[0.1196,-0.1376],"Charleroi":[-0.0072,0.1206],"Club Brugge":[0.5057,0.2165],"Dender":[-0.1711,-0.1892],"Genk":[0.1885,0.1074],"Gent":[-0.0682,-0.0219],"Mechelen":[-0.0621,-0.1164],"Oud-Heverlee Leuven":[-0.155,-0.0603],"RAAL La Louviere":[-0.2336,-0.0567],"St Truiden":[0.07,0.1211],"St. Gilloise":[0.2011,0.5507],"Standard":[-0.1793,0.0875],"Waregem":[0.0526,-0.0479],"Westerlo":[0.0527,-0.0198]}},"T1":{"name":"Turkey - Super Lig","grp":"B","mu":0.1248,"ha":0.2621,"scale":1.0192,"teams":{"Alanyaspor":[-0.0182,0.0629],"Antalyaspor":[-0.1837,-0.1014],"Besiktas":[0.2917,0.1618],"Buyuksehyr":[0.2192,0.1222],"Eyupspor":[-0.0974,-0.0265],"Fenerbahce":[0.4819,0.1718],"Galatasaray":[0.4384,0.2714],"Gaziantep":[0.0124,-0.1399],"Genclerbirligi":[-0.1385,0.02],"Goztep":[0.0648,0.1583],"Karagumruk":[-0.1937,-0.0665],"Kasimpasa":[-0.1213,-0.0152],"Kayserispor":[-0.1176,-0.1456],"Kocaelispor":[-0.437,0.2461],"Konyaspor":[-0.021,-0.0074],"Rizespor":[0.0671,-0.0784],"Samsunspor":[0.0672,0.1098],"Trabzonspor":[0.2198,0.1121]}},"G1":{"name":"Greece - Super League","grp":"B","mu":0.0849,"ha":0.2063,"scale":1.0023,"teams":{"AEK":[0.3202,0.4464],"Aris":[0.0203,0.1863],"Asteras Tripolis":[-0.1612,-0.0917],"Atromitos":[0.0373,-0.001],"Kifisia":[-0.0255,-0.0535],"Larisa":[-0.1439,-0.1591],"Levadeiakos":[0.1907,-0.0636],"OFI Crete":[0.0121,-0.2499],"Olympiakos":[0.3179,0.5683],"PAOK":[0.3299,0.3233],"Panathinaikos":[0.2737,0.2386],"Panetolikos":[-0.2328,-0.0978],"Panserraikos":[-0.3157,-0.3201],"Volos NFC":[-0.1401,-0.2049]}},"SC0":{"name":"Scotland - Premiership","grp":"B","mu":0.1328,"ha":0.2592,"scale":1.049,"teams":{"Aberdeen":[-0.1894,-0.0614],"Celtic":[0.4047,0.2488],"Dundee":[-0.0989,-0.1891],"Dundee United":[-0.0423,-0.1043],"Falkirk":[-0.0245,-0.0875],"Hearts":[0.154,0.3625],"Hibernian":[0.0631,0.1567],"Kilmarnock":[0.0003,-0.1681],"Livingston":[-0.2186,-0.2309],"Motherwell":[0.1058,0.164],"Rangers":[0.4565,0.1136],"St Mirren":[-0.2312,0.0247]}}},"asof":"2026-05-24"};
+// ===== REFINED ENGINE (v3 ratings) =====
+function refPmf(lam, N) {
+  const p = new Array(N); p[0] = Math.exp(-lam);
+  for (let k = 1; k < N; k++) p[k] = p[k - 1] * lam / k;
+  return p;
+}
+function refCalib1x2(p, th) {
+  const z = [th[0] * Math.log(Math.max(p[0], 1e-9)),
+             th[0] * Math.log(Math.max(p[1], 1e-9)) + th[1],
+             th[0] * Math.log(Math.max(p[2], 1e-9)) + th[2]];
+  const m = Math.max(z[0], z[1], z[2]);
+  const e = z.map(v => Math.exp(v - m)); const s = e[0] + e[1] + e[2];
+  return [e[0] / s, e[1] / s, e[2] / s];
+}
+function refCalibBin(p, t) {
+  const c = Math.min(Math.max(p, 1e-6), 1 - 1e-6);
+  return 1 / (1 + Math.exp(-(t[0] * Math.log(c / (1 - c)) + t[1])));
+}
+function refPredict(lgCode, home, away) {
+  const L = REF.leagues[lgCode];
+  const h = L.teams[home], a = L.teams[away];
+  const lh = Math.exp(L.mu + L.ha + h[0] - a[1]) * L.scale;
+  const la = Math.exp(L.mu + a[0] - h[1]) * L.scale;
+  const N = 10, rho = REF.rho;
+  const ph = refPmf(lh, N), pa = refPmf(la, N);
+  const P = [];
+  for (let i = 0; i < N; i++) { P.push([]); for (let j = 0; j < N; j++) P[i].push(ph[i] * pa[j]); }
+  P[0][0] *= 1 - lh * la * rho; P[0][1] *= 1 + lh * rho; P[1][0] *= 1 + la * rho; P[1][1] *= 1 - rho;
+  let tot = 0; for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) tot += P[i][j];
+  let H = 0, D = 0, A = 0, over = 0, btts = 0; const scores = [];
+  for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) {
+    const p = P[i][j] / tot;
+    if (i > j) H += p; else if (i === j) D += p; else A += p;
+    if (i + j > 2) over += p;
+    if (i > 0 && j > 0) btts += p;
+    if (i <= 6 && j <= 6) scores.push({ h: i, a: j, prob: p });
+  }
+  scores.sort((x, y) => y.prob - x.prob);
+  const c = REF.cal[L.grp];
+  return { lh, la, wdl: refCalib1x2([H, D, A], c.th), over: refCalibBin(over, c.tho),
+           btts: refCalibBin(btts, c.thb), scores: scores.slice(0, 5), group: L.grp };
+}
+function refInit() {
+  const sel = document.getElementById('rfLeague');
+  if (!sel) return;
+  const order = ['E0','SP1','D1','I1','F1','E1','N1','P1','B1','T1','G1','SC0'];
+  sel.innerHTML = order.map(k => `<option value="${k}">${REF.leagues[k].name}</option>`).join('');
+  sel.addEventListener('change', refFillTeams);
+  refFillTeams();
+}
+function refFillTeams() {
+  const lg = document.getElementById('rfLeague').value;
+  const teams = Object.keys(REF.leagues[lg].teams).sort();
+  const opts = teams.map(t => `<option value="${t}">${t}</option>`).join('');
+  document.getElementById('rfHome').innerHTML = opts;
+  document.getElementById('rfAway').innerHTML = opts;
+  if (teams.length > 1) document.getElementById('rfAway').selectedIndex = 1;
+}
+function refDevig(oh, od, oa) {
+  const i = [1 / oh, 1 / od, 1 / oa], s = i[0] + i[1] + i[2];
+  return [i[0] / s, i[1] / s, i[2] / s];
+}
+function runRefined() {
+  const lg = document.getElementById('rfLeague').value;
+  const home = document.getElementById('rfHome').value, away = document.getElementById('rfAway').value;
+  const out = document.getElementById('rfOut');
+  if (home === away) { showToast('⚠️ Pick two different teams'); return; }
+  const r = refPredict(lg, home, away);
+  const pct = v => (v * 100).toFixed(0) + '%';
+  const fair = v => (1 / v).toFixed(2);
+  const names = [home + ' win', 'Draw', away + ' win'];
+  const top = r.wdl.indexOf(Math.max(...r.wdl)), tp = r.wdl[top];
+  let conf;
+  if (tp >= 0.70) conf = 'Strong pick: in backtests, picks this confident were right about 78% of the time.';
+  else if (tp >= 0.60) conf = 'Good pick: backtests show about 71% right at this confidence.';
+  else if (tp >= 0.50) conf = 'Moderate pick: backtests show about 63% right at this confidence.';
+  else conf = 'Close call: no outcome is above 50%, so treat this as a toss-up.';
+  const rfNum = id => parseFloat(document.getElementById(id).value);
+  const oh = rfNum('rfOddsH'), od = rfNum('rfOddsD'), oa = rfNum('rfOddsA'), oo = rfNum('rfOddsO'), ou = rfNum('rfOddsU');
+  let cmp = '';
+  if (!isNaN(oh) && !isNaN(od) && !isNaN(oa) && oh > 1 && od > 1 && oa > 1) {
+    const m = refDevig(oh, od, oa);
+    cmp += `<tr><td>${home} win</td><td>${pct(r.wdl[0])}</td><td>${pct(m[0])}</td></tr>
+            <tr><td>Draw</td><td>${pct(r.wdl[1])}</td><td>${pct(m[1])}</td></tr>
+            <tr><td>${away} win</td><td>${pct(r.wdl[2])}</td><td>${pct(m[2])}</td></tr>`;
+  }
+  if (!isNaN(oo) && !isNaN(ou) && oo > 1 && ou > 1) {
+    const mo = (1 / oo) / ((1 / oo) + (1 / ou));
+    cmp += `<tr><td>Over 2.5</td><td>${pct(r.over)}</td><td>${pct(mo)}</td></tr>
+            <tr><td>Under 2.5</td><td>${pct(1 - r.over)}</td><td>${pct(1 - mo)}</td></tr>`;
+  }
+  const cmpCard = cmp ? `<div class="card"><div class="card-title">⚖️ Model vs Market</div>
+      <table style="width:100%;font-size:13px;text-align:left;border-collapse:collapse;">
+      <tr style="color:#888"><th>Outcome</th><th>Model</th><th>Market (margin removed)</th></tr>${cmp}</table>
+      <div style="font-size:12px;color:#888;margin-top:8px;line-height:1.5;">In backtests the closing odds were more accurate than this model (about 2 points more often right on win/draw/loss), and blending the two gave no gain. When the market price is available, trust it over the model.</div></div>` : '';
+  const src = r.group === 'A' ? 'real Understat xG + goals' : 'shots-based xG + goals';
+  out.innerHTML = `
+    <div class="card">
+      <div class="card-title">🎯 ${home} vs ${away}</div>
+      <div class="stat-row"><span class="stat-label">Expected goals</span><span class="stat-value">${r.lh.toFixed(2)} - ${r.la.toFixed(2)}</span></div>
+      <div class="stat-row"><span class="stat-label">Most likely result</span><span class="stat-value">${names[top]} (${pct(tp)})</span></div>
+      <div style="font-size:12px;color:#888;margin-top:8px;line-height:1.5;">${conf}</div>
+    </div>
+    ${advCard(advisorFor(r, lg, [oh, od, oa]))}
+    <div class="card"><div class="card-title">📈 Calibrated Probabilities</div>
+      <div class="market-grid">
+        <div class="market-item"><div class="market-name">${home} win</div><div class="market-value">${pct(r.wdl[0])}</div><div class="market-odds">Fair: ${fair(r.wdl[0])}</div></div>
+        <div class="market-item"><div class="market-name">Draw</div><div class="market-value">${pct(r.wdl[1])}</div><div class="market-odds">Fair: ${fair(r.wdl[1])}</div></div>
+        <div class="market-item"><div class="market-name">${away} win</div><div class="market-value">${pct(r.wdl[2])}</div><div class="market-odds">Fair: ${fair(r.wdl[2])}</div></div>
+        <div class="market-item"><div class="market-name">Over 2.5</div><div class="market-value">${pct(r.over)}</div><div class="market-odds">Fair: ${fair(r.over)}</div></div>
+        <div class="market-item"><div class="market-name">Under 2.5</div><div class="market-value">${pct(1 - r.over)}</div><div class="market-odds">Fair: ${fair(1 - r.over)}</div></div>
+        <div class="market-item"><div class="market-name">BTTS Yes</div><div class="market-value">${pct(r.btts)}</div><div class="market-odds">Fair: ${fair(r.btts)}</div></div>
+        <div class="market-item"><div class="market-name">BTTS No</div><div class="market-value">${pct(1 - r.btts)}</div><div class="market-odds">Fair: ${fair(1 - r.btts)}</div></div>
+      </div>
+      <div style="font-size:12px;color:#888;margin-top:8px;line-height:1.5;">BTTS is only slightly better than guessing (backtest: 55.6% right vs 54.8% always saying yes). Treat it as a rough guide.</div>
+    </div>
+    <div class="card"><div class="card-title">🎲 Top Scorelines</div>
+      ${r.scores.map(s => `<div class="stat-row"><span class="stat-label">${s.h} - ${s.a}</span><span class="stat-value">${(s.prob * 100).toFixed(1)}%</span></div>`).join('')}
+    </div>
+    ${cornCard(lg, home, away)}
+    ${cmpCard}
+    <div style="font-size:11px;color:#666;text-align:center;margin:4px 0 12px;">Built from ${src} · ratings as of ${REF.asof}</div>`;
+}
+
+// ===== ADVISOR (evidence-based guidance; update ADV when new tests are run) =====
+
+const ADV = {
+  updated: '2026-10-30',
+  sample: '20,354 predictions (12,104 unseen + 8,250 tuning) from 27,624 matches, 12 leagues, 2019-2026. CSV validated.',
+  confidence: [
+    { range: 'under 40%', right: 38.4, said: 37.9, n: 2954 },
+    { range: '40-50%', right: 43.2, said: 44.8, n: 7061 },
+    { range: '50-60%', right: 53.6, said: 54.6, n: 5035 },
+    { range: '60-70%', right: 65.7, said: 64.6, n: 2991 },
+    { range: '70% or more', right: 78.5, said: 77.9, n: 2313 }
+  ],
+  odds: [
+    { range: 'under 1.50', hit: 76.7, roi: 0.5, n: 3576 },
+    { range: '1.50-1.79', hit: 60.3, roi: 0.1, n: 3527 },
+    { range: '1.80-2.19', hit: 47.8, roi: -4.4, n: 4804 },
+    { range: '2.20-2.99', hit: 39.2, roi: -2.7, n: 5435 },
+    { range: '3.00 and above', hit: 28.8, roi: -4.3, n: 769 }
+  ],
+  edge: [
+    { range: 'Market 5pct over model', acc: 62.9, roi: 0.6, n: 2613 },
+    { range: 'Market 0-5pct over model', acc: 58.0, roi: 1.2, n: 4816 },
+    { range: 'Model 0-5pct over market', acc: 51.2, roi: -2.9, n: 5843 },
+    { range: 'Model 5-10pct over market', acc: 44.8, roi: -5.1, n: 3376 },
+    { range: 'Model 10pct over market', acc: 39.9, roi: -6.6, n: 1463 }
+  ],
+  around2: { range: '1.85-2.15', n: 3661, acc: 46.8, dist: {H:38.6, D:30.1, A:31.2}, homeFailDraw:55.4, awayFailDraw:53.6 },
+  leaguesOverall: { SC0:56.2, P1:56.2, N1:54.2, G1:53.9, E0:53.6, T1:53.4, I1:53.3, SP1:53.1, D1:51.6, B1:51.4, F1:51.0, E1:46.4 },
+  leaguesAt2: { SP1:52.7, N1:49.5, E1:49.0, T1:48.3, I1:47.7, E0:47.6, B1:47.3, F1:46.8, P1:44.2, SC0:43.7, D1:41.8, G1:37.7 },
+  disagree: { n: 3963, share: 19, market: 44.0, engine: 42.2 },
+  leagueGap: { E0: 0.0165, E1: 0.0169, D1: 0.0303, I1: 0.0194, SP1: 0.0179, F1: 0.0173, N1: 0.0217, P1: 0.0180, B1: 0.0184, T1: 0.0361, G1: 0.0213, SC0: 0.0152 },
+  tight: { n: 4561, share: 22, right: 39.4 },
+  drawTrap: { homeFailDraw:55.4, awayFailDraw:53.6, lowGoalAcc:45.8, highGoalAcc:59.0, julyAcc:41.5 },
+  log: [
+    ['Win/draw/loss accuracy','Refined 52.4pct right vs bookmakers 54.7pct (20,354 preds). CSV: SC0/P1 56.2pct best, E1 46.4pct worst.'],
+    ['The 2.00 trap','At 1.85-2.15 (3661 games) acc 46.8pct. Home @2.00 fails 55.4pct Draw, Away @2.00 fails 53.6pct Draw. Use 1X / X2.'],
+    ['Edge is backwards','Market 5pct over model: 62.9pct acc +0.6pct ROI. Model 10pct over market: 39.9pct acc -6.6pct ROI. Large edges are traps.'],
+    ['Staking tests','Flat 100 on top pick at Pinnacle close -2.9pct. Only <1.8 odds broke even (+0.5pct and +0.1pct). 2.0-2.5 lost 4-7pct.'],
+    ['Over/under and BTTS','Over/under 56.9pct right, BTTS 54.5pct vs 53.2pct always-yes baseline. Low goals <=1: 45.8pct acc, >=4: 59pct acc.'],
+    ['Price shopping','Best price -1.2pct vs -4.8pct at Pinnacle. Double chance at 2.00: 76pct win vs 46pct single.'],
+    ['Early season','July 41.5pct acc worst month. First quarter gap 0.028 vs 0.021 rest.'],
+    ['Draw problem','Actual draw 25.2pct but model picks draw 0.15pct. At 2.00, draw 30.1pct of all results.']
+  ],
+  watch: [
+    '2.00 double chance: test 1X at Home @2.00 and X2 at Away @2.00 - 76pct win vs 46pct single.',
+    'Low scoring filter: skip when expected total <2.0 - 45.8pct acc.',
+    'League filter: avoid G1, D1, SC0, P1 at 1.85-2.15 odds.',
+    'Profit zone: only <1.8 odds + edge <=0 gave +0.6pct to +1.2pct ROI.',
+    'Draw trap: at 2.00, 55pct Home losses and 53pct Away losses become Draws - use DNB.'
+  ]
+};
+
+
+function drawTrapDetector(pred, lg) {
+  const o = pred.pickOdds || pred.odds;
+  if (o >= 1.85 && o <= 2.15) {
+    const league = lg;
+    const bad2 = ['G1','D1','SC0','P1'];
+    const isBad = bad2.includes(league);
+    return {
+      isTrap: true,
+      isBad,
+      text: '2.00 TRAP ACTIVE: At 1.85-2.15 acc 46.8pct. Home @2.00 fails 55.4pct Draw, Away fails 53.6pct Draw. Fix: Double Chance.',
+      fix: pred.pred_pick === 'H' ? 'Bet 1X (Home or Draw)' : pred.pred_pick === 'A' ? 'Bet X2 (Away or Draw)' : 'Skip'
+    };
+  }
+  return {isTrap:false};
+}
+
+function advLeagueTier(lg) {
+  const g = ADV.leagueGap[lg];
+  if (g === undefined) return null;
+  if (g <= 0.0185) return { tier: 'closest to the bookmakers', level: 'ok' };
+  if (g <= 0.0225) return { tier: 'average', level: 'info' };
+  return { tier: 'weaker than elsewhere (bigger gap to the bookmakers)', level: 'warn' };
+}
+function advisorFor(r, lg, odds, opts) {
+  const names = ['home win', 'draw', 'away win'];
+  const p = r.wdl, top = p.indexOf(Math.max(...p)), tp = p[top];
+  const notes = [];
+  const have = odds && odds.every(v => v > 1);
+  let mk = null, pickOdds = null, agree = null;
+  if (have) {
+    const inv = odds.map(o => 1 / o), s = inv[0] + inv[1] + inv[2];
+    mk = inv.map(v => v / s); pickOdds = odds[top];
+    agree = mk.indexOf(Math.max(...mk)) === top;
+  }
+  const calRow = ADV.confidence.find(c => c.range === (tp >= .7 ? '70% or more' : tp >= .6 ? '60-70%' : tp >= .5 ? '50-60%' : tp >= .4 ? '40-50%' : 'under 40%'));
+  let level, title, text;
+  const tight = tp < 0.42;
+  if (tight) {
+    level = 'stop'; title = 'SKIP: too close to call';
+    text = `No outcome is above 42%. In ${ADV.tight.n.toLocaleString()} backtested matches like this (${ADV.tight.share}% of all), the top pick was right only ${ADV.tight.right}% of the time.`;
+  } else if (have && agree === false) {
+    level = 'stop'; title = 'SKIP: the bookmakers disagree';
+    text = `When the engine and the bookmakers pick different outcomes, the bookmakers were right ${ADV.disagree.market}% of the time and the engine ${ADV.disagree.engine}% (${ADV.disagree.n.toLocaleString()} matches). Trust the market here.`;
+  } else if (have && pickOdds >= 2.2) {
+    level = 'stop'; title = 'SKIP: price range that lost the most';
+    text = `Picks priced at ${pickOdds.toFixed(2)} are in the range where the engine was right only 38% or less, and flat bets there lost about 5% or more.`;
+  } else if (tp >= 0.6 && (!have || pickOdds < 1.8)) {
+    level = 'ok'; title = 'STRONGEST KIND OF PICK (information, not a profit promise)';
+    text = `The engine rates ${names[top]} at ${(tp * 100).toFixed(0)}%. Picks at this confidence were right about ${calRow.right}% of the time. ${have ? '' : 'Enter the closing odds to check the price range. '}Even so, flat bets on picks under 1.80 only broke even at best (about -0.4%).`;
+  } else {
+    level = 'warn'; title = 'WEAK EDGE: use as a guide only';
+    text = `${names[top]} at ${(tp * 100).toFixed(0)}%. Picks at this confidence were right about ${calRow.right}% of the time. That is not enough to beat the bookmaker's margin.`;
+  }
+  if (opts && opts.uncal) {
+    if (level === 'ok') { level = 'warn'; title = 'LEANS ONLY: Refined engine not available for this match'; }
+    text += ' These probabilities come from the Hybrid engine, which is not calibrated and was less accurate in tests (about 50% right on win/draw/loss), so the confidence figures here are less reliable.';
+  }
+  if (have) {
+    const b = ADV.odds.find(o => pickOdds < 1.5 ? o.range === 'under 1.50' : pickOdds < 1.8 ? o.range === '1.50-1.79' : pickOdds < 2.2 ? o.range === '1.80-2.19' : pickOdds < 3 ? o.range === '2.20-2.99' : o.range === '3.00 and above');
+    notes.push({ level: b.roi >= -1 ? 'ok' : 'warn', text: `Odds ${pickOdds.toFixed(2)} fall in the "${b.range}" range: the engine's picks there were right ${b.hit}% and returned ${b.roi > 0 ? '+' : ''}${b.roi}% on flat bets (${b.n.toLocaleString()} matches).` });
+  }
+  const lt = advLeagueTier(lg);
+  if (lt) notes.push({ level: lt.level, text: `This league is ${lt.tier}.` });
+  if (p[1] >= 0.27 && top !== 1) notes.push({ level: 'info', text: `Draws happen in about 26% of matches and the engine can almost never pick one. A ${(p[1] * 100).toFixed(0)}% draw chance here means the pick can easily miss.` });
+  notes.push({ level: 'info', text: 'Over/under 2.5 was right about 57% of the time and BTTS about 56%, only slightly better than always guessing the common answer. Do not lean on them.' });
+  if (REF.asof && !(opts && opts.uncal)) {
+    const age = (Date.now() - new Date(REF.asof).getTime()) / 86400000;
+    if (age > 100) notes.push({ level: 'warn', text: `Ratings are ${Math.round(age)} days old (as of ${REF.asof}). Teams promoted since then are missing, and transfers and injuries are not reflected. Refresh before relying on them.` });
+  }
+  notes.push({ level: 'info', text: 'Lineups and injuries are not included. Check them before kickoff: a missing key player can move the real odds a lot.' });
+  const stake = 'If you still bet: use the same small flat stake every time (1% of your bankroll or less), take the best price you can find (see Price Check), and never raise stakes to win back losses. In every backtest, betting more often only lost more.';
+  return { level, title, text, notes, stake };
+}
+function advCard(a) {
+  const col = { ok: '#2ecc71', warn: '#f39c12', stop: '#e74c3c', info: '#888' };
+  const icon = { ok: '✅', warn: '🟡', stop: '⛔', info: 'ℹ️' };
+  return `<div class="card"><div class="card-title">🧭 Advisor</div>
+    <div style="font-weight:700;color:${col[a.level]};margin-bottom:6px;">${icon[a.level]} ${a.title}</div>
+    <div style="font-size:13px;line-height:1.5;">${a.text}</div>
+    <div style="margin-top:10px;">${a.notes.map(n => `<div style="font-size:12px;line-height:1.5;color:${n.level === 'info' ? '#aaa' : col[n.level]};margin:4px 0;">${icon[n.level]} ${n.text}</div>`).join('')}</div>
+    <div style="font-size:12px;color:#888;line-height:1.5;margin-top:10px;border-top:1px solid #2a3a5e;padding-top:8px;">${a.stake}</div>
+    <div style="font-size:11px;color:#666;margin-top:6px;">Advice is based on backtests of ${ADV.sample}, updated ${ADV.updated}. In those tests no betting rule was profitable.</div></div>`;
+}
+function advRenderPlaybook() {
+  const box = document.getElementById('advBox'); if (!box) return;
+  const row = (a, b, c) => `<tr><td style="padding:4px 6px 4px 0">${a}</td><td style="padding:4px 6px">${b}</td><td style="padding:4px 0 4px 6px">${c}</td></tr>`;
+  box.innerHTML = `
+  <div class="card"><div class="card-title">📖 How to use this app</div>
+    <div style="font-size:13px;line-height:1.6;color:#ccc;">
+      <strong>1. Predict.</strong> Open <em>Refined</em>, pick the league and teams. Add closing odds if you have them.<br>
+      <strong>2. Read the Advisor.</strong> It tells you whether the pick is worth any attention, based on what the backtests found.<br>
+      <strong>3. Check the price.</strong> In <em>Price Check</em>, compare your bookmaker's odds with a sharp price and see the real margin.<br>
+      <strong>4. Track before you trust.</strong> Log paper bets with closing odds. After 100+ bets, average closing-line value above zero is the first real sign of an edge.<br>
+      <strong>5. Check lineups and injuries</strong> before kickoff. The engine can't see them.</div></div>
+  <div class="card"><div class="card-title">🎯 What the confidence number means</div>
+    <table style="width:100%;font-size:12px;border-collapse:collapse;text-align:left;"><tr style="color:#888"><th>Engine confidence</th><th>Right</th><th>Matches</th></tr>
+    ${ADV.confidence.map(c => row(c.range, c.right + '%', c.n.toLocaleString())).join('')}</table>
+    <div style="font-size:12px;color:#888;margin-top:6px;">The percentages are honest: when it says about 70%, it was right about 78% of the time.</div></div>
+  <div class="card"><div class="card-title">💰 Which odds ranges work best</div>
+    <table style="width:100%;font-size:12px;border-collapse:collapse;text-align:left;"><tr style="color:#888"><th>Odds on the pick</th><th>Right</th><th>Flat-bet return</th></tr>
+    ${ADV.odds.map(o => row(o.range, o.hit + '%', (o.roi > 0 ? '+' : '') + o.roi + '%')).join('')}</table>
+    <div style="font-size:12px;color:#888;margin-top:6px;line-height:1.5;">The engine hits most often on short-priced favourites, but even there returns were only about break-even. Longer odds lost more.</div></div>
+  <div class="card"><div class="card-title">⛔ When to skip</div>
+    <div style="font-size:13px;line-height:1.7;color:#ccc;">
+      • No outcome above 42% (too close; ${ADV.tight.right}% right)<br>
+      • The bookmakers pick a different outcome (they were right ${ADV.disagree.market}% vs ${ADV.disagree.engine}%)<br>
+      • The pick is priced at 2.20 or more<br>
+      • Ratings are old, or a team is missing or recently promoted<br>
+      • Lineups or injuries are unknown for key players<br>
+      • You are betting to win back a loss</div></div>
+  <div class="card"><div class="card-title">🛡️ Staking and bankroll</div>
+    <div style="font-size:13px;line-height:1.7;color:#ccc;">
+      • No staking plan turned these predictions into profit in tests. Treat any betting as entertainment spending.<br>
+      • Decide a monthly amount you can afford to lose completely, and stop when it's gone.<br>
+      • Use one small flat stake (1% of the bankroll or less). Never increase stakes after losses.<br>
+      • Best price matters: always taking the best price across bookmakers cut the average loss from about 5-7% to about 1%.<br>
+      • If gambling stops being fun, or you find yourself chasing losses, talk to someone you trust or a local support service.</div></div>
+  <div class="card"><div class="card-title">🧪 What we have learned so far</div>
+    <div style="font-size:12px;line-height:1.6;color:#aaa;">
+      ${ADV.log.map(l => `<div style="margin:6px 0;"><strong style="color:#ddd">${l[0]}.</strong> ${l[1]}</div>`).join('')}
+      <div style="color:#666;margin-top:8px;">Evidence updated ${ADV.updated}. Sample: ${ADV.sample}.</div></div></div>
+  <div class="card"><div class="card-title">🔭 Watchlist: still being explored</div>
+    <div style="font-size:12px;line-height:1.6;color:#aaa;">${ADV.watch.map(w => `<div style="margin:6px 0;">• ${w}</div>`).join('')}</div></div>`;
+}
+
+const CORN = {"r":63.29,"leagues":{"E0":{"mu":1.5271,"ha":0.1617,"avg":10.03,"teams":{"Arsenal":[0.0829,0.2125],"Aston Villa":[0.0488,0.0221],"Bournemouth":[0.0747,-0.0326],"Brentford":[-0.031,-0.0745],"Brighton":[-0.0055,0.03],"Burnley":[-0.1352,-0.0909],"Chelsea":[0.1278,0.0978],"Crystal Palace":[-0.0794,-0.0293],"Everton":[-0.0817,-0.0274],"Fulham":[0.0204,-0.0226],"Leeds":[-0.0593,-0.052],"Liverpool":[0.1674,0.1152],"Man City":[0.2014,0.1695],"Man United":[0.0063,0.0088],"Newcastle":[0.0988,0.0181],"Nott'm Forest":[-0.0106,-0.0095],"Sunderland":[-0.1284,-0.0343],"Tottenham":[0.0777,0.0422],"West Ham":[-0.0442,-0.0826],"Wolves":[-0.162,-0.0762]}},"E1":{"mu":1.5035,"ha":0.2426,"avg":10.39,"teams":{"Birmingham":[0.0685,0.1018],"Blackburn":[-0.0026,-0.0126],"Bristol City":[-0.0376,0.0157],"Charlton":[-0.1212,-0.0828],"Coventry":[0.0216,0.1028],"Derby":[-0.0739,-0.0067],"Hull":[-0.0604,-0.0952],"Ipswich":[0.0651,0.1437],"Leicester":[0.0312,-0.0877],"Middlesbrough":[0.1834,0.1047],"Millwall":[0.0601,-0.0543],"Norwich":[0.0338,0.0476],"Oxford":[-0.1456,-0.2172],"Portsmouth":[0.0563,-0.0009],"Preston":[-0.0859,-0.1257],"QPR":[-0.0388,-0.0203],"Sheffield United":[0.133,0.0031],"Sheffield Weds":[-0.0901,-0.0866],"Southampton":[0.084,0.0285],"Stoke":[0.0733,0.0262],"Swansea":[-0.0747,-0.0234],"Watford":[-0.0006,0.005],"West Brom":[0.0025,0.1185],"Wrexham":[-0.0779,-0.0264]}},"D1":{"mu":1.4406,"ha":0.2617,"avg":9.75,"teams":{"Augsburg":[-0.0213,-0.082],"Bayern Munich":[0.1734,0.1848],"Dortmund":[0.0574,0.102],"Ein Frankfurt":[-0.0084,0.0005],"FC Koln":[-0.0012,-0.0414],"Freiburg":[-0.1204,0.0672],"Hamburg":[-0.1239,-0.1215],"Heidenheim":[-0.0434,-0.0215],"Hoffenheim":[0.0919,0.0117],"Leverkusen":[0.1171,0.132],"M'gladbach":[-0.139,-0.0086],"Mainz":[0.0218,0.0186],"RB Leipzig":[0.0322,0.0458],"St Pauli":[-0.018,-0.0294],"Stuttgart":[0.0896,0.0728],"Union Berlin":[-0.0079,-0.01],"Werder Bremen":[-0.0346,-0.0052],"Wolfsburg":[-0.0013,-0.2132]}},"I1":{"mu":1.3577,"ha":0.2522,"avg":8.78,"teams":{"Atalanta":[0.133,0.0655],"Bologna":[0.0032,0.0548],"Cagliari":[-0.0357,-0.0673],"Como":[0.0205,0.1611],"Cremonese":[-0.0925,-0.1354],"Fiorentina":[-0.0171,0.0104],"Genoa":[-0.0814,-0.0492],"Inter":[0.1867,0.1774],"Juventus":[0.124,0.0772],"Lazio":[-0.0243,0.0238],"Lecce":[-0.0262,-0.1152],"Milan":[0.0023,0.0331],"Napoli":[0.1248,0.1972],"Parma":[-0.0577,-0.0912],"Pisa":[-0.1145,-0.0232],"Roma":[0.0769,0.0972],"Sassuolo":[-0.0669,-0.0647],"Torino":[-0.0714,-0.0387],"Udinese":[0.0125,-0.0626],"Verona":[-0.0498,-0.0948]}},"SP1":{"mu":1.4221,"ha":0.2629,"avg":9.62,"teams":{"Alaves":[0.0351,-0.0253],"Ath Bilbao":[0.114,0.1273],"Ath Madrid":[0.1544,0.0416],"Barcelona":[0.2337,0.0604],"Betis":[-0.015,-0.0076],"Celta":[-0.1327,0.0443],"Elche":[-0.0946,0.0385],"Espanol":[-0.012,-0.0425],"Getafe":[-0.0903,0.0405],"Girona":[-0.0557,-0.0154],"Levante":[-0.0125,-0.0775],"Mallorca":[-0.1188,-0.1508],"Osasuna":[-0.0712,-0.0003],"Oviedo":[-0.0837,-0.0509],"Real Madrid":[0.1779,0.1224],"Sevilla":[-0.0085,0.0531],"Sociedad":[0.0706,0.0403],"Valencia":[0.0162,-0.0044],"Vallecano":[0.0826,-0.0576],"Villarreal":[-0.0523,-0.0313]}},"F1":{"mu":1.4403,"ha":0.2306,"avg":9.55,"teams":{"Angers":[-0.1392,-0.0187],"Auxerre":[-0.0232,-0.019],"Brest":[-0.1106,-0.107],"Le Havre":[-0.0767,-0.0204],"Lens":[0.1564,0.0862],"Lille":[0.0723,0.1164],"Lorient":[-0.1181,-0.0696],"Lyon":[0.1242,-0.0281],"Marseille":[0.0532,0.1467],"Metz":[-0.0478,-0.0584],"Monaco":[0.0612,0.0872],"Nantes":[-0.0956,-0.072],"Nice":[0.0475,-0.0788],"Paris FC":[-0.0405,-0.0885],"Paris SG":[0.1719,0.1793],"Rennes":[0.1356,0.0507],"Strasbourg":[-0.0548,0.0011],"Toulouse":[-0.0398,0.015]}},"N1":{"mu":1.5442,"ha":0.1858,"avg":10.47,"teams":{"AZ Alkmaar":[0.0771,0.0847],"Ajax":[-0.0297,0.0362],"Excelsior":[-0.1146,0.0027],"Feyenoord":[0.1796,0.2175],"For Sittard":[-0.0933,-0.1304],"Go Ahead Eagles":[0.0302,-0.1005],"Groningen":[0.078,0.0204],"Heerenveen":[0.0227,0.0322],"Heracles":[-0.0444,-0.0596],"NAC Breda":[0.0574,0.0604],"Nijmegen":[0.0915,0.1052],"PSV Eindhoven":[0.2191,0.1195],"Sparta Rotterdam":[-0.0692,-0.1142],"Telstar":[-0.0618,-0.1196],"Twente":[0.0353,0.1104],"Utrecht":[-0.0026,0.0724],"Volendam":[-0.1311,-0.1167],"Zwolle":[-0.1337,-0.0616]}},"P1":{"mu":1.5164,"ha":0.0779,"avg":9.41,"teams":{"AVS":[-0.1226,-0.111],"Alverca":[0.0017,0.0282],"Arouca":[-0.0947,-0.0513],"Benfica":[0.2989,0.2387],"Casa Pia":[-0.0713,-0.1165],"Estoril":[-0.0517,-0.0171],"Estrela":[-0.1548,-0.1256],"Famalicao":[0.0949,-0.0183],"Gil Vicente":[0.0479,0.0721],"Guimaraes":[0.0235,0.0976],"Moreirense":[-0.1542,-0.0144],"Nacional":[-0.0274,-0.1635],"Porto":[0.1098,0.2076],"Rio Ave":[-0.0427,-0.1631],"Santa Clara":[-0.0305,0.0256],"Sp Braga":[0.0678,0.1684],"Sp Lisbon":[0.2018,0.1945],"Tondela":[-0.0763,-0.1064]}},"B1":{"mu":1.5179,"ha":0.1932,"avg":10.21,"teams":{"Anderlecht":[0.0392,0.0288],"Antwerp":[-0.0172,0.0686],"Cercle Brugge":[0.0388,-0.0495],"Charleroi":[0.0818,0.0018],"Club Brugge":[0.1344,0.0683],"Dender":[-0.1299,-0.0657],"Genk":[0.0425,0.1082],"Gent":[-0.0304,-0.0782],"Mechelen":[-0.0565,-0.0234],"Oud-Heverlee Leuven":[-0.0263,-0.1438],"RAAL La Louviere":[0.0126,0.0541],"St Truiden":[0.0453,0.0405],"St. Gilloise":[0.0613,0.1639],"Standard":[-0.123,-0.0973],"Waregem":[-0.0175,0.0298],"Westerlo":[0.0155,-0.0364]}},"T1":{"mu":1.4496,"ha":0.1877,"avg":9.48,"teams":{"Alanyaspor":[-0.0004,0.1268],"Antalyaspor":[-0.0634,-0.0834],"Besiktas":[0.0943,0.0086],"Buyuksehyr":[-0.0162,-0.015],"Eyupspor":[-0.1583,-0.1105],"Fenerbahce":[0.251,0.0958],"Galatasaray":[0.1355,0.1712],"Gaziantep":[0.0057,-0.0788],"Genclerbirligi":[-0.0813,-0.0593],"Goztep":[-0.0207,0.0111],"Karagumruk":[-0.1271,-0.0345],"Kasimpasa":[-0.0445,0.0281],"Kayserispor":[0.0715,0.0054],"Kocaelispor":[-0.0628,0.0978],"Konyaspor":[0.0004,0.0103],"Rizespor":[0.0023,0.0349],"Samsunspor":[0.0666,0.0396],"Trabzonspor":[0.0154,-0.0278]}},"G1":{"mu":1.3362,"ha":0.241,"avg":8.66,"teams":{"AEK":[0.1637,0.1831],"Aris":[0.0643,0.023],"Asteras Tripolis":[0.0607,-0.0575],"Atromitos":[-0.0127,-0.0053],"Kifisia":[-0.0533,-0.107],"Larisa":[-0.0725,-0.0747],"Levadeiakos":[-0.0461,-0.0197],"OFI Crete":[-0.151,-0.1131],"Olympiakos":[0.2309,0.2893],"PAOK":[0.1376,0.0729],"Panathinaikos":[0.0368,0.1239],"Panetolikos":[-0.0985,-0.0497],"Panserraikos":[-0.1817,-0.1394],"Volos NFC":[-0.0358,-0.0243]}},"SC0":{"mu":1.5511,"ha":0.1499,"avg":10.27,"teams":{"Aberdeen":[-0.0147,-0.0233],"Celtic":[0.2185,0.1446],"Dundee":[-0.0932,-0.0185],"Dundee United":[-0.0667,-0.07],"Falkirk":[-0.0186,0.0433],"Hearts":[0.0761,0.0692],"Hibernian":[-0.005,-0.0798],"Kilmarnock":[-0.0709,-0.0011],"Livingston":[-0.0448,-0.0772],"Motherwell":[-0.1323,0.0701],"Rangers":[0.1865,0.1463],"St Mirren":[0.0242,-0.0482]}}}};
+// ===== CORNERS (low-skill estimate) =====
+function cornNbOver(tot, r, line) {
+  const p = r / (r + tot), k0 = Math.floor(line);
+  let pk = Math.pow(p, r), cdf = pk;
+  for (let k = 0; k < k0; k++) { pk = pk * (k + r) / (k + 1) * (1 - p); cdf += pk; }
+  return Math.max(0, Math.min(1, 1 - cdf));
+}
+function cornPredict(lg, home, away) {
+  const L = CORN.leagues[lg];
+  if (!L || !L.teams[home] || !L.teams[away]) return null;
+  const h = L.teams[home], a = L.teams[away];
+  const lh = Math.exp(L.mu + L.ha + h[0] - a[1]), la = Math.exp(L.mu + a[0] - h[1]), tot = lh + la;
+  const lines = [8.5, 9.5, 10.5, 11.5].map(l => ({ line: l, over: cornNbOver(tot, CORN.r, l) }));
+  return { lh, la, tot, lines, avg: L.avg };
+}
+function cornCard(lg, home, away) {
+  const c = cornPredict(lg, home, away);
+  if (!c) return '';
+  const pct = v => (v * 100).toFixed(0) + '%', fair = v => (1 / v).toFixed(2);
+  return `<div class="card"><div class="card-title">🚩 Corners (low-skill estimate)</div>
+    <div class="stat-row"><span class="stat-label">Expected corners</span><span class="stat-value">${c.lh.toFixed(1)} - ${c.la.toFixed(1)} (total ${c.tot.toFixed(1)})</span></div>
+    <div class="stat-row"><span class="stat-label">League average (recent)</span><span class="stat-value">${c.avg.toFixed(1)}</span></div>
+    <table style="width:100%;font-size:13px;border-collapse:collapse;text-align:left;margin-top:8px;">
+      <tr style="color:#888"><th>Total line</th><th>Over</th><th>Under</th><th>Fair odds (O / U)</th></tr>
+      ${c.lines.map(x => `<tr><td>${x.line}</td><td>${pct(x.over)}</td><td>${pct(1 - x.over)}</td><td>${fair(x.over)} / ${fair(1 - x.over)}</td></tr>`).join('')}
+    </table>
+    <div style="font-size:12px;color:#888;line-height:1.5;margin-top:8px;">Backtest (12,000+ matches): this estimate was only about 1% closer than simply guessing the league average, and its over/under picks were right about as often as guessing. Corner counts are mostly random. There are no corner bookmaker prices in our data, so we could not test whether any price can be beaten. Treat this as curiosity, not a betting signal.</div></div>`;
+}
+
+// ===== PRICE CHECK =====
+const PC_KEY = 'priceCheckLog_v1';
+let pcLog = [];
+let pcMarket = '1x2';
+function pcEsc(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function pcLoad() { try { pcLog = JSON.parse(localStorage.getItem(PC_KEY) || '[]'); } catch (e) { pcLog = []; } }
+function pcSave() { try { localStorage.setItem(PC_KEY, JSON.stringify(pcLog)); } catch (e) { showToast('⚠️ Could not save in this browser'); } }
+function pcNum(id) { const v = parseFloat(document.getElementById(id).value); return isNaN(v) ? NaN : v; }
+function pcFair(odds) {                       // odds array -> margin-free probabilities
+  const inv = odds.map(o => 1 / o), s = inv.reduce((a, b) => a + b, 0);
+  return { p: inv.map(v => v / s), margin: s - 1 };
+}
+function pcSetMarket(m) {
+  pcMarket = m;
+  document.getElementById('pcRow1x2').style.display = m === '1x2' ? '' : 'none';
+  document.getElementById('pcRowOu').style.display = m === 'ou' ? '' : 'none';
+  document.getElementById('pcBtn1x2').classList.toggle('btn-primary', m === '1x2');
+  document.getElementById('pcBtnOu').classList.toggle('btn-primary', m === 'ou');
+}
+function pcReadOdds(prefix) {                 // prefix 'my' or 'ref'
+  if (pcMarket === '1x2') return [pcNum(prefix + 'H'), pcNum(prefix + 'D'), pcNum(prefix + 'A')];
+  return [pcNum(prefix + 'O'), pcNum(prefix + 'U')];
+}
+function pcNames() { return pcMarket === '1x2' ? ['Home', 'Draw', 'Away'] : ['Over 2.5', 'Under 2.5']; }
+function pcCheck() {
+  const my = pcReadOdds('pcMy'), ref = pcReadOdds('pcRef');
+  if (my.some(v => !(v > 1)) || ref.some(v => !(v > 1))) { showToast('⚠️ Enter all odds (above 1.00)'); return; }
+  const fair = pcFair(ref), mine = pcFair(my), names = pcNames();
+  const edges = my.map((o, i) => fair.p[i] * o - 1);
+  const best = edges.indexOf(Math.max(...edges));
+  const rows = names.map((n, i) => `<div class="stat-row"><span class="stat-label">${n}</span>
+      <span class="stat-value" style="color:${edges[i] > 0 ? '#2ecc71' : '#e74c3c'}">${(edges[i] * 100).toFixed(1)}%
+      <span style="color:#888;font-weight:400;font-size:12px"> (fair ${(1 / fair.p[i]).toFixed(2)} vs yours ${my[i].toFixed(2)})</span></span></div>`).join('');
+  let verdict;
+  const be = edges[best];
+  if (be >= 0.15) verdict = '⚠️ Edge above 15% usually means a stale or wrong price (or a market where the reference is not comparable). Double-check before betting.';
+  else if (be >= 0.04) verdict = `✅ ${names[best]} is priced ${(be * 100).toFixed(1)}% above the reference fair price. Past tests: edges of 4-6% against Pinnacle earned about 1-2%, within luck. Treat as a small edge, not a sure thing.`;
+  else if (be > 0) verdict = `🟡 ${names[best]} is only ${(be * 100).toFixed(1)}% above fair. Too small to matter after normal luck.`;
+  else verdict = '❌ No outcome beats the reference fair price. Your bookmaker margin is taking everything.';
+  document.getElementById('pcOut').innerHTML = `
+    <div class="card"><div class="card-title">⚖️ Price Check</div>
+      ${rows}
+      <div class="stat-row"><span class="stat-label">Your bookmaker margin</span><span class="stat-value">${(mine.margin * 100).toFixed(1)}%</span></div>
+      <div class="stat-row"><span class="stat-label">Reference margin</span><span class="stat-value">${(fair.margin * 100).toFixed(1)}%</span></div>
+      <div style="font-size:13px;line-height:1.5;margin-top:10px;">${verdict}</div>
+      <div class="grid-2" style="margin-top:10px;">
+        <button class="btn btn-primary" onclick="pcLogBet(${best})">Log paper bet: ${names[best]}</button>
+        <button class="btn" onclick="pcLogBetPick()">Log another pick…</button>
+      </div></div>`;
+}
+function pcLogBetPick() {
+  const names = pcNames();
+  const ans = prompt('Which pick? Enter number: ' + names.map((n, i) => (i + 1) + '=' + n).join('  '));
+  const i = parseInt(ans, 10) - 1;
+  if (i >= 0 && i < names.length) pcLogBet(i);
+}
+function pcLogBet(i) {
+  const my = pcReadOdds('pcMy'), ref = pcReadOdds('pcRef'), fair = pcFair(ref);
+  const stake = pcNum('pcStake') > 0 ? pcNum('pcStake') : 100;
+  const label = (document.getElementById('pcLabel').value || 'Match').trim();
+  pcLog.unshift({ id: Date.now(), date: new Date().toISOString().slice(0, 10), label, market: pcMarket, pick: i,
+    pickName: pcNames()[i], odds: my[i], stake, refAtBet: ref, edge: fair.p[i] * my[i] - 1, closing: null, result: null });
+  pcSave(); pcRender(); showToast('✅ Logged');
+}
+function pcSetClosing(id) {
+  const e = pcLog.find(x => x.id === id); if (!e) return;
+  const n = e.market === '1x2' ? 3 : 2;
+  const ans = prompt('Closing reference odds, separated by spaces (' + (n === 3 ? 'home draw away' : 'over under') + '):');
+  if (!ans) return;
+  const v = ans.trim().split(/\s+/).map(parseFloat);
+  if (v.length !== n || v.some(x => !(x > 1))) { showToast('⚠️ Need ' + n + ' valid odds'); return; }
+  e.closing = v; pcSave(); pcRender();
+}
+function pcSetResult(id, r) {
+  const e = pcLog.find(x => x.id === id); if (!e) return;
+  e.result = r; pcSave(); pcRender();
+}
+function pcDelete(id) { if (confirm('Delete this entry?')) { pcLog = pcLog.filter(x => x.id !== id); pcSave(); pcRender(); } }
+function pcEntryStats(e) {
+  const clv = e.closing ? pcFair(e.closing).p[e.pick] * e.odds - 1 : null;
+  const pl = e.result === 'W' ? e.stake * (e.odds - 1) : e.result === 'L' ? -e.stake : e.result === 'V' ? 0 : null;
+  return { clv, pl };
+}
+function pcRender() {
+  const box = document.getElementById('pcLogBox');
+  if (!box) return;
+  const stats = pcLog.map(pcEntryStats);
+  const settled = stats.filter(s => s.pl !== null), withClv = stats.filter(s => s.clv !== null);
+  const staked = pcLog.filter((e, i) => stats[i].pl !== null && e.result !== 'V').reduce((a, e) => a + e.stake, 0);
+  const profit = settled.reduce((a, s) => a + s.pl, 0);
+  const avgClv = withClv.length ? withClv.reduce((a, s) => a + s.clv, 0) / withClv.length : null;
+  const avgEdge = pcLog.length ? pcLog.reduce((a, e) => a + e.edge, 0) / pcLog.length : null;
+  let note = '';
+  if (pcLog.length < 100) note = `Log at least 100 bets (with closing odds) before reading anything into these numbers. You have ${pcLog.length}.`;
+  else if (avgClv !== null && avgClv > 0.01) note = 'Average closing-line value is positive: your prices tend to beat the final market price. That is the best early sign of a real edge.';
+  else if (avgClv !== null) note = 'Average closing-line value is about zero or negative: you are not beating the final market price.';
+  const items = pcLog.map((e, i) => {
+    const s = stats[i];
+    return `<div style="border-top:1px solid #2a3a5e;padding:10px 0;font-size:13px;">
+      <div><strong>${pcEsc(e.label)}</strong> · ${e.market === '1x2' ? '1X2' : 'O/U 2.5'} · ${pcEsc(e.pickName)} @ ${e.odds.toFixed(2)} · stake ${e.stake}</div>
+      <div style="color:#888;font-size:12px;">${e.date} · edge at bet ${(e.edge * 100).toFixed(1)}%${s.clv !== null ? ' · closing value ' + (s.clv * 100).toFixed(1) + '%' : ''}${s.pl !== null ? ' · P/L ' + s.pl.toFixed(0) : ''}</div>
+      <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;">
+        ${e.closing ? '' : `<button class="btn" onclick="pcSetClosing(${e.id})">Add closing odds</button>`}
+        ${e.result ? `<span style="color:#aaa">Result: ${e.result === 'W' ? 'Won' : e.result === 'L' ? 'Lost' : 'Void'}</span>` :
+          `<button class="btn" onclick="pcSetResult(${e.id},'W')">Won</button><button class="btn" onclick="pcSetResult(${e.id},'L')">Lost</button><button class="btn" onclick="pcSetResult(${e.id},'V')">Void</button>`}
+        <button class="btn" onclick="pcDelete(${e.id})">🗑</button></div></div>`;
+  }).join('');
+  box.innerHTML = `<div class="card"><div class="card-title">📒 Paper-Bet Log</div>
+    <div class="stat-row"><span class="stat-label">Bets logged</span><span class="stat-value">${pcLog.length}</span></div>
+    <div class="stat-row"><span class="stat-label">Average edge at bet</span><span class="stat-value">${avgEdge === null ? '-' : (avgEdge * 100).toFixed(1) + '%'}</span></div>
+    <div class="stat-row"><span class="stat-label">Average closing-line value (${withClv.length} bets)</span><span class="stat-value">${avgClv === null ? '-' : (avgClv * 100).toFixed(2) + '%'}</span></div>
+    <div class="stat-row"><span class="stat-label">Settled / profit</span><span class="stat-value">${settled.length} / ${profit.toFixed(0)}${staked ? ' (' + (profit / staked * 100).toFixed(1) + '%)' : ''}</span></div>
+    ${note ? `<div style="font-size:12px;color:#888;margin:8px 0;line-height:1.5;">${note}</div>` : ''}
+    <div style="display:flex;gap:6px;margin:8px 0;"><button class="btn" onclick="pcExport()">Copy CSV</button><button class="btn" onclick="pcClear()">Clear all</button></div>
+    ${items || '<div style="color:#888;font-size:13px;">No entries yet.</div>'}</div>`;
+}
+function pcExport() {
+  const head = 'date,label,market,pick,odds,stake,edge,closing,result';
+  const rows = pcLog.map(e => [e.date, '"' + e.label.replace(/"/g, '""') + '"', e.market, e.pickName, e.odds, e.stake, e.edge.toFixed(4), e.closing ? e.closing.join('/') : '', e.result || ''].join(','));
+  const text = [head].concat(rows).join('\n');
+  if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => showToast('📋 CSV copied'), () => showToast('⚠️ Copy failed'));
+  else showToast('⚠️ Copy not supported here');
+}
+function pcClear() { if (confirm('Delete the whole log?')) { pcLog = []; pcSave(); pcRender(); } }
+// ---- optional: fetch reference odds from The Odds API (needs your own free key) ----
+let pcEvents = [];
+function pcKeySave() { try { localStorage.setItem('pcApiKey', document.getElementById('pcApiKey').value.trim()); showToast('Key saved on this device'); } catch (e) {} }
+async function pcFetch() {
+  const key = document.getElementById('pcApiKey').value.trim();
+  const sport = document.getElementById('pcSport').value;
+  if (!key) { showToast('⚠️ Enter your API key first'); return; }
+  const out = document.getElementById('pcFetchOut');
+  out.innerHTML = '<div style="color:#888;font-size:13px;">Fetching…</div>';
+  try {
+    const url = `https://api.the-odds-api.com/v4/sports/${sport}/odds?apiKey=${encodeURIComponent(key)}&regions=eu&markets=h2h&oddsFormat=decimal`;
+    const r = await fetch(url);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const left = r.headers.get('x-requests-remaining');
+    const data = await r.json();
+    pcEvents = data.map(ev => {
+      const books = ev.bookmakers || [];
+      let src = books.find(b => b.key === 'pinnacle'), srcName = 'Pinnacle', price = null;
+      const grab = b => { const m = (b.markets || []).find(x => x.key === 'h2h'); if (!m) return null;
+        const g = n => (m.outcomes.find(o => o.name === n) || {}).price; const h = g(ev.home_team), a = g(ev.away_team), d = g('Draw');
+        return (h && a && d) ? [h, d, a] : null; };
+      if (src) price = grab(src);
+      if (!price) {                                   // fall back to the average of all books
+        const all = books.map(grab).filter(Boolean);
+        if (all.length) { price = [0, 1, 2].map(i => all.reduce((s, p) => s + p[i], 0) / all.length); srcName = 'Average of ' + all.length + ' books'; }
+      }
+      return price ? { label: ev.home_team + ' vs ' + ev.away_team, time: ev.commence_time, price, srcName } : null;
+    }).filter(Boolean);
+    out.innerHTML = (left !== null ? `<div style="font-size:12px;color:#888;margin-bottom:6px;">Requests left this month: ${pcEsc(left)}</div>` : '') +
+      (pcEvents.length ? pcEvents.map((e, i) => `<div style="border-top:1px solid #2a3a5e;padding:8px 0;font-size:13px;">
+        <div><strong>${pcEsc(e.label)}</strong></div>
+        <div style="color:#888;font-size:12px;">${pcEsc(e.time.slice(0, 16).replace('T', ' '))} UTC · ${pcEsc(e.srcName)} · ${e.price.map(v => v.toFixed(2)).join(' / ')}</div>
+        <button class="btn" style="margin-top:4px" onclick="pcUseEvent(${i})">Use as reference</button></div>`).join('') : '<div style="color:#888;font-size:13px;">No upcoming matches with odds returned.</div>');
+  } catch (err) {
+    out.innerHTML = `<div style="color:#e74c3c;font-size:13px;">Could not fetch (${pcEsc(err.message)}). Check the key, your quota, or enter the reference odds by hand.</div>`;
+  }
+}
+function pcUseEvent(i) {
+  const e = pcEvents[i]; if (!e) return;
+  pcSetMarket('1x2');
+  document.getElementById('pcLabel').value = e.label;
+  ['H', 'D', 'A'].forEach((k, j) => document.getElementById('pcRef' + k).value = e.price[j].toFixed(2));
+  showToast('Reference odds filled in. Now enter your bookmaker\'s odds.');
+  window.scrollTo(0, 0);
+}
+function pcInit() {
+  if (!document.getElementById('pcLabel')) return;
+  pcLoad(); pcSetMarket('1x2'); pcRender();
+  try { document.getElementById('pcApiKey').value = localStorage.getItem('pcApiKey') || ''; } catch (e) {}
+}
+
+pcInit();
+refInit();
+advRenderPlaybook();
+
+// ===== ANALYZE INTEGRATION: Refined engine + Advisor =====
+const RFA_ALIAS = {
+  'manchester city':'man city','manchester united':'man united','man utd':'man united','manchester utd':'man united','man u':'man united','man c':'man city','spurs':'tottenham','tottenham hotspur':'tottenham',
+  'wolverhampton wanderers':'wolves','wolverhampton':'wolves','newcastle united':'newcastle','nottingham forest':"nott'm forest",'nottm forest':"nott'm forest",
+  'brighton and hove albion':'brighton','west ham united':'west ham','leeds united':'leeds','leicester city':'leicester','sheffield utd':'sheffield united',
+  'atletico madrid':'ath madrid','atletico':'ath madrid','athletic bilbao':'ath bilbao','athletic club':'ath bilbao','real betis':'betis','real sociedad':'sociedad',
+  'rayo vallecano':'vallecano','celta vigo':'celta','espanyol':'espanol','deportivo alaves':'alaves','psg':'paris sg','paris saint germain':'paris sg',
+  'ac milan':'milan','inter milan':'inter','internazionale':'inter','as roma':'roma','borussia dortmund':'dortmund','bayer leverkusen':'leverkusen',
+  'eintracht frankfurt':'ein frankfurt','borussia monchengladbach':"m'gladbach",'gladbach':"m'gladbach",'olympique marseille':'marseille',
+  'olympique lyonnais':'lyon','as monaco':'monaco','bayern':'bayern munich','fc koln':'fc koln','cologne':'fc koln','werder bremen':'werder bremen'
+};
+function rfaNorm(s) {
+  return String(s || '').toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9 ]/g, ' ')
+    .replace(/\b(fc|afc|cf|ac|sc|club|the)\b/g, ' ').replace(/\s+/g, ' ').trim();
+}
+function rfaLev(a, b) {
+  const m = a.length, n = b.length; if (!m) return n; if (!n) return m;
+  let prev = Array.from({ length: n + 1 }, (_, j) => j);
+  for (let i = 1; i <= m; i++) {
+    const cur = [i];
+    for (let j = 1; j <= n; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    prev = cur;
+  }
+  return prev[n];
+}
+function rfaMatchTeam(typed, teams) {
+  const t = rfaNorm(typed); if (!t) return null;
+  const target = RFA_ALIAS[t] ? rfaNorm(RFA_ALIAS[t]) : t;
+  const norm = teams.map(x => [x, rfaNorm(x)]);
+  let m = norm.find(n => n[1] === target); if (m) return m[0];
+  const tc = target.replace(/ /g, '');
+  m = norm.find(n => n[1].replace(/ /g, '') === tc); if (m) return m[0];
+  const part = norm.filter(n => n[1].length >= 4 && (tc.includes(n[1].replace(/ /g, '')) || n[1].replace(/ /g, '').includes(tc)));
+  if (part.length === 1) return part[0][0];
+  const tt = new Set(target.split(' ')); let best = null, bs = 0;
+  for (const n of norm) { const nt = n[1].split(' '); const inter = nt.filter(w => tt.has(w)).length; const sc = inter / Math.max(nt.length, tt.size); if (sc > bs) { bs = sc; best = n[0]; } }
+  if (bs >= 0.5) return best;
+  if (tc.length >= 5) {
+    const ranked = norm.map(n => [n[0], rfaLev(tc, n[1].replace(/ /g, ''))]).sort((x, y) => x[1] - y[1]);
+    const lim = Math.max(1, Math.floor(tc.length / 5));
+    if (ranked[0][1] <= lim && (!ranked[1] || ranked[1][1] > ranked[0][1])) return ranked[0][0];
+  }
+  return null;
+}
+const rfaState = { code: null, th: null, ta: null };
+function rfaLeagueCode() {
+  const sel = document.getElementById('rfaLeague').value;
+  if (sel && sel !== 'auto') return sel;
+  return ({ epl: 'E0', laliga: 'SP1', bundesliga: 'D1', seriea: 'I1' })[document.getElementById('league').value] || null;
+}
+function rfaSync(force) {
+  const code = rfaLeagueCode(), hs = document.getElementById('rfaHome'), as = document.getElementById('rfaAway'), st = document.getElementById('rfaStatus');
+  if (!hs) return;
+  if (!code) { hs.innerHTML = ''; as.innerHTML = ''; rfaState.code = null; st.innerHTML = 'Choose a league above to use the Refined engine (Ghana and "Other" need a league picked here).'; return; }
+  const teams = Object.keys(REF.leagues[code].teams).sort();
+  if (code !== rfaState.code || force) {
+    const opts = '<option value="">-- choose --</option>' + teams.map(t => `<option value="${t}">${t}</option>`).join('');
+    hs.innerHTML = opts; as.innerHTML = opts; rfaState.code = code; rfaState.th = null; rfaState.ta = null;
+  }
+  const th = document.getElementById('homeTeam').value, ta = document.getElementById('awayTeam').value;
+  if (th !== rfaState.th) { rfaState.th = th; hs.value = rfaMatchTeam(th, teams) || ''; }
+  if (ta !== rfaState.ta) { rfaState.ta = ta; as.value = rfaMatchTeam(ta, teams) || ''; }
+  const miss = []; if (!hs.value) miss.push(th || 'home team'); if (!as.value) miss.push(ta || 'away team');
+  st.innerHTML = (hs.value && as.value) ? `✅ Refined engine will use: ${hs.value} vs ${as.value}` : `⚠️ Could not match: ${pcEsc(miss.join(', '))}. Pick the team(s) here, or the Refined engine is skipped.`;
+}
+function rfaInit() {
+  const sel = document.getElementById('rfaLeague'); if (!sel) return;
+  const order = ['E0','SP1','D1','I1','F1','E1','N1','P1','B1','T1','G1','SC0'];
+  sel.innerHTML = '<option value="auto">Auto (from League above)</option>' + order.map(k => `<option value="${k}">${REF.leagues[k].name}</option>`).join('');
+  ['homeTeam', 'awayTeam'].forEach(id => document.getElementById(id).addEventListener('input', () => rfaSync(false)));
+  document.getElementById('league').addEventListener('change', () => rfaSync(false));
+  rfaSync(true);
+}
+function rfaSelection() {
+  const code = rfaLeagueCode();
+  if (!code) return { sel: null, reason: 'no league available for it (pick one in the Refined league box)' };
+  const home = document.getElementById('rfaHome').value, away = document.getElementById('rfaAway').value;
+  if (!home || !away) return { sel: null, reason: 'the teams were not matched (pick them in the Refined team boxes)' };
+  if (home === away) return { sel: null, reason: 'the same team was chosen twice' };
+  return { sel: { code, home, away }, reason: '' };
+}
+function advisorForAnalysis(d) {
+  const o = d.odds, haveOdds = [o.home, o.draw, o.away].every(v => v > 1);
+  let r, lg = null, uncal = false;
+  if (d.refined) { r = d.refined; lg = d.rfSel.code; }
+  else { const s = d.scoreProbs; r = { wdl: [s.homeWin, s.draw, s.awayWin], over: s.over25, btts: s.btts }; uncal = true; }
+  const a = advisorFor(r, lg, haveOdds ? [o.home, o.draw, o.away] : null, { uncal });
+  const wn = (h, aw) => h > aw * 1.2 ? 'home' : aw > h * 1.2 ? 'away' : 'draw';
+  const picks = { goals: wn(d.goalsHome, d.goalsAway), xg: wn(d.xgHome, d.xgAway), hybrid: wn(d.hybridHome, d.hybridAway) };
+  const lab = { home: d.homeTeam + ' win', draw: 'a draw', away: d.awayTeam + ' win' };
+  if (d.refined) {
+    const rp = ['home', 'draw', 'away'][r.wdl.indexOf(Math.max(...r.wdl))];
+    const same = Object.values(picks).filter(v => v === rp).length;
+    if (same === 3) a.notes.unshift({ level: 'info', text: `All four engines pick ${lab[rp]}. They use similar inputs, so agreement is not independent proof.` });
+    else if (picks.hybrid !== rp) a.notes.unshift({ level: 'warn', text: `The Hybrid engine leans ${lab[picks.hybrid]}, but the Refined engine picks ${lab[rp]}. The Refined engine was the more accurate one in tests (about 52-53% right vs about 50-52%), so give it more weight.` });
+    else a.notes.unshift({ level: 'info', text: `${same + 1} of the 4 engines pick ${lab[rp]}.` });
+  }
+  if (d.competition && d.competition !== 'league') {
+    const kind = d.competition === 'cup' ? 'domestic cup' : 'European or international';
+    const orig = a.title;
+    a.notes.unshift({ level: 'warn', text: 'Stats pulled from a cup-style view are often "last 10 games across all competitions". In our tests full-season league averages worked better than short windows.' });
+    a.text = `The engines were built and tested only on league matches. ${kind.charAt(0).toUpperCase() + kind.slice(1)} games often have rotated squads and different motivation, so ratings and form from league play may not apply. Check confirmed lineups first. (Underlying read for what it is worth: ${orig}.) ` + a.text;
+    a.title = 'LOW RELIABILITY: ' + kind + ' match (outside what was tested)';
+    if (a.level === 'ok') a.level = 'warn';
+  }
+  const b = d.bestBet;
+  if (b && b.ev > 0) {
+    const hyb = b.prob * b.odds - 1;
+    let probRef = null;
+    if (d.refined) probRef = { home: r.wdl[0], draw: r.wdl[1], away: r.wdl[2], btts: r.btts, over: r.over }[b.key];
+    if (probRef !== null && probRef !== undefined) {
+      const re = probRef * b.odds - 1;
+      if (Math.max(re, hyb) >= 0.15) a.notes.unshift({ level: 'stop', text: `Value check on ${b.name} @ ${b.odds}: Hybrid sees ${(hyb * 100).toFixed(0)}%, Refined sees ${(re * 100).toFixed(0)}%. An edge this large almost always means a typo, wrong team or stats, or a stale or wrong price, not a real bargain. Recheck every input before trusting it.` });
+      else if (re >= 0.04) a.notes.unshift({ level: 'warn', text: `Value check on ${b.name} @ ${b.odds}: Hybrid sees ${(hyb * 100).toFixed(1)}%, Refined sees ${(re * 100).toFixed(1)}%. Even when both agree, edges of 4-6% over a sharp price earned only about 1-2% in tests, inside normal luck. Confirm lineups and compare prices before acting.` });
+      else if (re > 0) a.notes.unshift({ level: 'warn', text: `Hybrid flags ${b.name} as value (+${(hyb * 100).toFixed(1)}%), but the Refined engine sees only +${(re * 100).toFixed(1)}%. Too small to matter.` });
+      else a.notes.unshift({ level: 'stop', text: `Only the Hybrid sees value on ${b.name} @ ${b.odds}. The Refined engine disagrees (${(re * 100).toFixed(1)}%). In tests, bets picked by a model's own "value" signal lost 7-18%, so treat this as a likely false alarm.` });
+    } else a.notes.unshift({ level: 'warn', text: `Hybrid flags ${b.name} as value, but "value" bets picked by a model lost 7-18% in tests, and no second opinion is available here.` });
+    if (b.key === 'btts' || b.key === 'over') a.notes.push({ level: 'info', text: 'Over/under and BTTS predictions were only slightly better than guessing in tests.' });
+    if (['home', 'draw', 'away'].includes(b.key) && b.odds >= 2.2) a.notes.push({ level: 'warn', text: `${b.name} is priced ${b.odds}: in tests, picks above 2.20 were right 38% or less and lost about 5-18% on flat bets.` });
+  }
+  return a;
+}
+function advToPriceCheck() {
+  const d = lastAnalysis; if (!d) return;
+  document.querySelector('[data-tab="pricecheck"]').click();
+  pcSetMarket('1x2');
+  document.getElementById('pcLabel').value = d.homeTeam + ' vs ' + d.awayTeam;
+  [['H', d.odds.home], ['D', d.odds.draw], ['A', d.odds.away]].forEach(([k, v]) => { if (v > 1) document.getElementById('pcMy' + k).value = v; });
+  showToast('Now enter a sharp reference price (for example Pinnacle) to compare.');
+  window.scrollTo(0, 0);
+}
+function refHtmlFor(d) {
+  if (!d.refined) return `<div class="card"><div class="card-title">🚀 Refined Engine</div><div style="font-size:12px;color:#888;line-height:1.5;">Not used for this match: ${d.rfaReason}. The advice below uses the Hybrid engine only.</div></div>`;
+  const r = d.refined, s = d.scoreProbs, pc = v => (v * 100).toFixed(0) + '%';
+  return `<div class="card"><div class="card-title">🚀 Refined Engine vs Hybrid</div>
+    <div style="font-size:12px;color:#888;margin-bottom:6px;">${d.rfSel.home} vs ${d.rfSel.away} · ratings as of ${REF.asof}</div>
+    <table style="width:100%;font-size:13px;border-collapse:collapse;text-align:left;">
+      <tr style="color:#888"><th></th><th>Hybrid</th><th>Refined ★</th></tr>
+      <tr><td>${d.homeTeam} win</td><td>${pc(s.homeWin)}</td><td><strong>${pc(r.wdl[0])}</strong></td></tr>
+      <tr><td>Draw</td><td>${pc(s.draw)}</td><td><strong>${pc(r.wdl[1])}</strong></td></tr>
+      <tr><td>${d.awayTeam} win</td><td>${pc(s.awayWin)}</td><td><strong>${pc(r.wdl[2])}</strong></td></tr>
+      <tr><td>Over 2.5</td><td>${pc(s.over25)}</td><td><strong>${pc(r.over)}</strong></td></tr>
+      <tr><td>BTTS Yes</td><td>${pc(s.btts)}</td><td><strong>${pc(r.btts)}</strong></td></tr>
+      <tr><td>Expected goals</td><td>${d.hybridHome.toFixed(1)} - ${d.hybridAway.toFixed(1)}</td><td><strong>${r.lh.toFixed(1)} - ${r.la.toFixed(1)}</strong></td></tr>
+    </table>
+    <div style="font-size:12px;color:#888;line-height:1.5;margin-top:8px;">The Refined engine uses team ratings learned from about 27,000 matches and its percentages are calibrated. In tests it was right about 52-53% of the time on win/draw/loss, against about 50-52% for the three manual engines.</div></div>
+    ${cornCard(d.rfSel.code, d.rfSel.home, d.rfSel.away)}`;
+}
+
+rfaInit();
+
+// ===== BACKUP / RESTORE + LAYOUT =====
+function bkStatus() {
+  const el = document.getElementById('bkStatus'); if (!el) return;
+  let ok = false;
+  try { localStorage.setItem('__t', '1'); localStorage.removeItem('__t'); ok = true; } catch (e) { ok = false; }
+  el.innerHTML = ok ? '✅ Your tracked bets and Price Check log are saved in this browser. Make a backup now and then.'
+    : '⚠️ This browser is not keeping data for pages opened this way (for example from a file manager). Your bets will be lost when you close the page. Use "Create + copy backup" after each session, or tell me and I can put the app at a private link where saving works.';
+}
+function bkExport() {
+  const data = JSON.stringify({ v: 1, saved: new Date().toISOString(), app: appData, priceCheck: (typeof pcLog !== 'undefined' ? pcLog : []) });
+  const box = document.getElementById('bkBox'); box.value = data;
+  if (navigator.clipboard) navigator.clipboard.writeText(data).then(() => showToast('📋 Backup copied. Paste it somewhere safe.'), () => showToast('Backup is in the box: select and copy it'));
+  else showToast('Backup is in the box: select and copy it');
+}
+function bkImport() {
+  try {
+    const p = JSON.parse(document.getElementById('bkBox').value);
+    if (!p || !p.app || !Array.isArray(p.app.history)) throw new Error('bad');
+    appData = p.app; if (Array.isArray(p.priceCheck)) { pcLog = p.priceCheck; pcSave(); pcRender(); }
+    saveData(); updateStatsDisplay(); updateHistoryDisplay(); showToast('✅ Backup restored');
+  } catch (e) { showToast('⚠️ That does not look like a valid backup'); }
+}
+function fixStickyOffsets() {
+  try { const h = document.querySelector('.header'); if (h) document.documentElement.style.setProperty('--hdrH', h.offsetHeight + 'px'); } catch (e) {}
+}
+try { if (window.addEventListener) { window.addEventListener('resize', fixStickyOffsets); window.addEventListener('load', fixStickyOffsets); } } catch (e) {}
+fixStickyOffsets(); bkStatus();
+
+// ===== TAB NAVIGATION =====
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(tab.dataset.tab).classList.add('active');
+  });
+});
+
+// ===== TOAST =====
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2500);
+}
+
+// ===== CALCULATIONS =====
+function poisson(lambda, k) {
+  const e = 2.71828182845904523536;
+  let fact = 1;
+  for (let i = 2; i <= k; i++) fact *= i;
+  return (Math.pow(lambda, k) * Math.pow(e, -lambda)) / fact;
+}
+
+function getHomeAdvantage(league) {
+  const map = { epl: 1.12, laliga: 1.18, bundesliga: 1.15, seriea: 1.15, gpl: 1.25, other: 1.15 };
+  return map[league] || 1.15;
+}
+
+function getFormFactor(formStr) {
+  if (!formStr) return 1.00;
+  const wins = (formStr.match(/W/gi) || []).length;
+  return 0.85 + (wins * 0.075);
+}
+
+function getInjuryFactor(level) {
+  const map = { '0': 1.00, '1': 0.90, '2': 0.75 };
+  return map[level] || 1.00;
+}
+
+function calculateGoalsOnly(teamGoals, oppConceded, form, injury, homeAdv) {
+  const base = (teamGoals + oppConceded) / 2;
+  return base * form * injury * homeAdv;
+}
+
+function calculateXgOnly(teamXg, oppXga, form, injury, homeAdv) {
+  const base = (teamXg + oppXga) / 2;
+  return base * form * injury * homeAdv;
+}
+
+function calculateHybrid(teamXg, teamGoals, oppXga, oppConceded, form, injury, homeAdv, games, xgWeight, goalsWeight) {
+  // v2: finishing multiplier removed (backtest: it double-counted goals and hurt accuracy)
+  let xgW, gW;
+  if (games < 10) { xgW = 0.50; gW = 0.50; }
+  else if (games < 20) { xgW = xgWeight; gW = goalsWeight; }
+  else { xgW = 0.70; gW = 0.30; }
+
+  const base = (teamXg * xgW) + (teamGoals * gW);
+  const oppAvg = (oppXga + oppConceded) / 2;
+  let adjusted = (base + oppAvg) / 2;
+  let final = adjusted * form * injury * homeAdv;
+
+  const leagueAvg = 1.4;
+  if (final > 3.0 || final < 0.5) {
+    final = (final * 0.7) + (leagueAvg * 0.3);
+  }
+  return final;
+}
+
+function getScorelineProbabilities(homeXg, awayXg) {
+  const scores = [];
+  let btts = 0, over25 = 0, homeWin = 0, draw = 0, awayWin = 0;
+
+  for (let h = 0; h <= 6; h++) {
+    for (let a = 0; a <= 6; a++) {
+      const hp = poisson(homeXg, h);
+      const ap = poisson(awayXg, a);
+      const prob = hp * ap;
+      scores.push({ h, a, prob });
+
+      if (h > 0 && a > 0) btts += prob;
+      if (h + a > 2) over25 += prob;
+      if (h > a) homeWin += prob;
+      else if (h === a) draw += prob;
+      else awayWin += prob;
+    }
+  }
+
+  scores.sort((a, b) => b.prob - a.prob);
+  return { scores, btts, over25, homeWin, draw, awayWin };
+}
+
+function calcEV(prob, odds, stake) {
+  const profit = stake * (odds - 1);
+  const ev = (prob * profit) - ((1 - prob) * stake);
+  return { ev, evPct: (ev / stake) * 100 };
+}
+
+function getFinishingBadge(ratio) {
+  if (ratio > 1.15) return { text: 'Clinical', cls: 'finishing-clinical' };
+  if (ratio > 1.05) return { text: 'Good', cls: 'finishing-good' };
+  if (ratio > 0.95) return { text: 'Average', cls: 'finishing-average' };
+  return { text: 'Poor', cls: 'finishing-poor' };
+}
+
+// ===== MAIN ANALYSIS =====
+let lastAnalysis = null;
+
+function runAnalysis() {
+  const homeTeam = document.getElementById('homeTeam').value || 'Home';
+  const awayTeam = document.getElementById('awayTeam').value || 'Away';
+  const gamesPlayed = parseFloat(document.getElementById('gamesPlayed').value) || 12;
+  const league = document.getElementById('league').value;
+  const competition = document.getElementById('competition').value;
+
+  const homeXg = parseFloat(document.getElementById('homeXg').value);
+  const homeGoals = parseFloat(document.getElementById('homeGoals').value);
+  const homeXga = parseFloat(document.getElementById('homeXga').value);
+  const homeConceded = parseFloat(document.getElementById('homeConceded').value);
+  const homeForm = document.getElementById('homeForm').value.toUpperCase();
+  const homeInjury = document.getElementById('homeInjury').value;
+  const homeCS = parseFloat(document.getElementById('homeCS').value) || 50;
+
+  const awayXg = parseFloat(document.getElementById('awayXg').value);
+  const awayGoals = parseFloat(document.getElementById('awayGoals').value);
+  const awayXga = parseFloat(document.getElementById('awayXga').value);
+  const awayConceded = parseFloat(document.getElementById('awayConceded').value);
+  const awayForm = document.getElementById('awayForm').value.toUpperCase();
+  const awayInjury = document.getElementById('awayInjury').value;
+
+  if (isNaN(homeXg) || isNaN(homeGoals) || isNaN(awayXg) || isNaN(awayGoals)) {
+    showToast('⚠️ Please fill in required stats (xG and Goals)');
+    return;
+  }
+
+  const homeAdv = getHomeAdvantage(league);
+  const homeFormFactor = getFormFactor(homeForm);
+  const awayFormFactor = getFormFactor(awayForm);
+  const homeInjFactor = getInjuryFactor(homeInjury);
+  const awayInjFactor = getInjuryFactor(awayInjury);
+  const homeWins = (homeForm.match(/W/g) || []).length;
+  const awayWins = (awayForm.match(/W/g) || []).length;
+
+  // Engine 1: Goals Only
+  const goalsHome = calculateGoalsOnly(homeGoals, awayConceded || 1, homeFormFactor, homeInjFactor, homeAdv);
+  const goalsAway = calculateGoalsOnly(awayGoals, homeConceded || 1, awayFormFactor, awayInjFactor, 0.87);
+
+  // Engine 2: xG Only
+  const xgHome = calculateXgOnly(homeXg, awayXga || 1, homeFormFactor, homeInjFactor, homeAdv);
+  const xgAway = calculateXgOnly(awayXg, homeXga || 1, awayFormFactor, awayInjFactor, 0.87);
+
+  // Engine 3: Hybrid
+  const hybridHome = calculateHybrid(homeXg, homeGoals, awayXga || 1, awayConceded || 1, homeFormFactor, homeInjFactor, homeAdv, gamesPlayed, appData.weights.xg, appData.weights.goals);
+  const hybridAway = calculateHybrid(awayXg, awayGoals, homeXga || 1, homeConceded || 1, awayFormFactor, awayInjFactor, 0.87, gamesPlayed, appData.weights.xg, appData.weights.goals);
+
+  const homeFinishing = homeXg > 0 ? homeGoals / homeXg : 1.0;
+  const awayFinishing = awayXg > 0 ? awayGoals / awayXg : 1.0;
+
+  const scoreProbs = getScorelineProbabilities(hybridHome, hybridAway);
+
+  const oddsHome = parseFloat(document.getElementById('oddsHome').value);
+  const oddsDraw = parseFloat(document.getElementById('oddsDraw').value);
+  const oddsAway = parseFloat(document.getElementById('oddsAway').value);
+  const oddsBttsYes = parseFloat(document.getElementById('oddsBttsYes').value);
+  const oddsOver25 = parseFloat(document.getElementById('oddsOver25').value);
+  const stake = parseFloat(document.getElementById('stakeAmount').value) || 100;
+
+  // Refined engine (uses team ratings, not the typed stats)
+  const rf = rfaSelection();
+  let refined = null;
+  if (rf.sel) { try { refined = refPredict(rf.sel.code, rf.sel.home, rf.sel.away); } catch (e) { refined = null; rf.reason = 'ratings for these teams were not found'; } }
+
+  // Find best value bet
+  let bestBet = null, maxEv = -9999;
+  
+  if (!isNaN(oddsHome)) {
+    const r = calcEV(scoreProbs.homeWin, oddsHome, stake);
+    if (r.ev > maxEv) { maxEv = r.ev; bestBet = { key: 'home', name: `${homeTeam} Win`, odds: oddsHome, ev: r.ev, evPct: r.evPct, prob: scoreProbs.homeWin }; }
+  }
+  if (!isNaN(oddsDraw)) {
+    const r = calcEV(scoreProbs.draw, oddsDraw, stake);
+    if (r.ev > maxEv) { maxEv = r.ev; bestBet = { key: 'draw', name: 'Draw', odds: oddsDraw, ev: r.ev, evPct: r.evPct, prob: scoreProbs.draw }; }
+  }
+  if (!isNaN(oddsAway)) {
+    const r = calcEV(scoreProbs.awayWin, oddsAway, stake);
+    if (r.ev > maxEv) { maxEv = r.ev; bestBet = { key: 'away', name: `${awayTeam} Win`, odds: oddsAway, ev: r.ev, evPct: r.evPct, prob: scoreProbs.awayWin }; }
+  }
+  if (!isNaN(oddsBttsYes)) {
+    const r = calcEV(scoreProbs.btts, oddsBttsYes, stake);
+    if (r.ev > maxEv) { maxEv = r.ev; bestBet = { key: 'btts', name: 'BTTS Yes', odds: oddsBttsYes, ev: r.ev, evPct: r.evPct, prob: scoreProbs.btts }; }
+  }
+  if (!isNaN(oddsOver25)) {
+    const r = calcEV(scoreProbs.over25, oddsOver25, stake);
+    if (r.ev > maxEv) { maxEv = r.ev; bestBet = { key: 'over', name: 'Over 2.5 Goals', odds: oddsOver25, ev: r.ev, evPct: r.evPct, prob: scoreProbs.over25 }; }
+  }
+
+  lastAnalysis = {
+    homeTeam, awayTeam, gamesPlayed, league,
+    goalsHome, goalsAway, xgHome, xgAway, hybridHome, hybridAway,
+    homeFinishing, awayFinishing, homeWins, awayWins,
+    homeFormFactor, awayFormFactor,
+    scoreProbs, bestBet, stake, homeCS,
+    refined, rfSel: rf.sel, rfaReason: rf.reason, competition,
+    odds: { home: oddsHome, draw: oddsDraw, away: oddsAway, btts: oddsBttsYes, over: oddsOver25 },
+    timestamp: Date.now()
+  };
+
+  renderResults();
+  document.querySelector('[data-tab="results"]').click();
+  showToast('✓ Analysis complete!');
+}
+
+function renderResults() {
+  if (!lastAnalysis) return;
+  const d = lastAnalysis;
+
+  document.getElementById('resultsEmpty').style.display = 'none';
+  const content = document.getElementById('resultsContent');
+  content.style.display = 'block';
+
+  const goalsRounded = `${Math.round(d.goalsHome)}-${Math.round(d.goalsAway)}`;
+  const xgRounded = `${Math.round(d.xgHome)}-${Math.round(d.xgAway)}`;
+  const hybridRounded = `${Math.round(d.hybridHome)}-${Math.round(d.hybridAway)}`;
+  const hybridTotal = (d.hybridHome + d.hybridAway).toFixed(1);
+
+  // Determine winner for each method
+  function getWinner(h, a, homeTeam, awayTeam) {
+    if (h > a * 1.2) return 'home';
+    if (a > h * 1.2) return 'away';
+    return 'draw';
+  }
+  const goalsWinner = getWinner(d.goalsHome, d.goalsAway);
+  const xgWinner = getWinner(d.xgHome, d.xgAway);
+  const hybridWinner = getWinner(d.hybridHome, d.hybridAway);
+
+  let agreement = 0;
+  if (goalsWinner === hybridWinner) agreement++;
+  if (xgWinner === hybridWinner) agreement++;
+
+  const winnerText = hybridWinner === 'home' ? `${d.homeTeam} WIN` : hybridWinner === 'away' ? `${d.awayTeam} WIN` : 'DRAW';
+  const winnerConfidence = agreement === 2 ? 'High' : agreement === 1 ? 'Moderate' : 'Low';
+
+  const bttsNo = d.hybridAway < 0.7 || d.hybridHome < 0.7;
+  const bttsLikely = d.hybridHome > 1.2 && d.hybridAway > 0.8;
+
+  const homeFinBadge = getFinishingBadge(d.homeFinishing);
+  const awayFinBadge = getFinishingBadge(d.awayFinishing);
+
+  const advHtml = advCard(advisorForAnalysis(d)) + `<button class="btn btn-secondary" onclick="advToPriceCheck()" style="margin-bottom:12px;">⚖️ Check this price in Price Check</button>`;
+  const refHtml = refHtmlFor(d);
+
+  let html = `
+    <div class="summary-box">
+      <div style="text-align:center; margin-bottom:12px;">
+        <div style="font-size:16px; font-weight:700;">${d.homeTeam} vs ${d.awayTeam}</div>
+      </div>
+
+      <div class="summary-item">
+        <div class="summary-check">✓✓✓ <strong>SCORELINE PREDICTIONS</strong></div>
+        <div class="prediction-row">
+          <span class="method-label method-goals">⚽ Goals-Only</span>
+          <span class="score-value">${goalsRounded}</span>
+        </div>
+        <div class="prediction-row">
+          <span class="method-label method-xg">📊 xG-Only</span>
+          <span class="score-value">${xgRounded}</span>
+        </div>
+        <div class="prediction-row">
+          <span class="method-label method-hybrid">🎯 Hybrid ★</span>
+          <span class="score-value" style="color:#2ecc71;">${hybridRounded}</span>
+        </div>
+        ${d.refined ? `<div class="prediction-row">
+          <span class="method-label method-refined">🚀 Refined ★</span>
+          <span class="score-value" style="color:#c39bd3;">${d.refined.scores[0].h}-${d.refined.scores[0].a}</span>
+        </div>` : ''}
+      </div>
+
+      <div class="big-score">
+        <div class="score">${hybridRounded}</div>
+        <div class="label">MOST LIKELY SCORE</div>
+      </div>
+
+      <div class="summary-item">
+        <div class="summary-check">✓ <strong>MATCH WINNER</strong></div>
+        <div style="padding:8px 0; font-size:15px; font-weight:700; color:${agreement===2?'#2ecc71':'#f39c12'}">
+          ${winnerText} (${winnerConfidence} agreement between the manual engines)
+        </div>
+      </div>
+
+      <div class="summary-item">
+        <div class="summary-check">✓ <strong>BOTH TEAMS TO SCORE</strong></div>
+        <div style="padding:8px 0; font-size:14px; font-weight:700; color:${bttsNo?'#2ecc71':'#f39c12'}">
+          ${bttsNo ? 'BTTS NO - Clean sheet likely' : bttsLikely ? 'BTTS YES - Both teams scoring' : 'BTTS Uncertain'}
+        </div>
+        <div class="info-text">
+          Away finishing: ${d.awayFinishing.toFixed(2)}x <span class="finishing-badge ${awayFinBadge.cls}">${awayFinBadge.text}</span>
+        </div>
+      </div>
+
+      <div class="summary-item">
+        <div class="summary-check">✓ <strong>TOTAL GOALS</strong></div>
+        <div style="padding:8px 0;">
+          <span style="font-size:20px; font-weight:700; color:#2ecc71;">${hybridTotal} goals</span>
+        </div>
+        <div style="font-weight:700; color:${hybridTotal > 2.7 ? '#2ecc71' : '#f39c12'}">
+          ${hybridTotal > 2.7 ? 'OVER 2.5 likely' : hybridTotal < 2.3 ? 'UNDER 2.5 likely' : 'Close to 2.5 line'}
+        </div>
+      </div>
+    </div>
+
+    <div class="confidence-stars ${agreement===2?'conf-high':agreement===1?'conf-medium':'conf-low'}">
+      ${agreement===2 ? '★★★ ALL THREE MANUAL ENGINES AGREE (they share the same inputs, so this is not proof)' : agreement===1 ? '★★☆ TWO OF THREE MANUAL ENGINES AGREE' : '★☆☆ MANUAL ENGINES DISAGREE - be careful'}
+    </div>
+
+    ${advHtml}
+    ${refHtml}
+
+    <div class="card">
+      <div class="card-title">🎯 Finishing Quality Analysis</div>
+      <div class="stat-row">
+        <span class="stat-label">${d.homeTeam}</span>
+        <span class="stat-value">${d.homeFinishing.toFixed(2)}x <span class="finishing-badge ${homeFinBadge.cls}">${homeFinBadge.text}</span></span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">${d.awayTeam}</span>
+        <span class="stat-value">${d.awayFinishing.toFixed(2)}x <span class="finishing-badge ${awayFinBadge.cls}">${awayFinBadge.text}</span></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📊 Form Impact</div>
+      <div class="stat-row">
+        <span class="stat-label">${d.homeTeam}</span>
+        <span class="stat-value">${d.homeWins}/5 wins → ${d.homeFormFactor.toFixed(2)}x</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">${d.awayTeam}</span>
+        <span class="stat-value">${d.awayWins}/5 wins → ${d.awayFormFactor.toFixed(2)}x</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🎲 Top Scorelines (Hybrid)</div>
+      <table class="scoreline-table">
+        <tr><th>Score</th><th>Probability</th><th>Odds</th></tr>
+        ${d.scoreProbs.scores.slice(0, 6).map(s => `
+          <tr>
+            <td><strong>${s.h}-${s.a}</strong></td>
+            <td>${(s.prob*100).toFixed(1)}%</td>
+            <td>${s.prob > 0 ? (1/s.prob).toFixed(2) : '-'}</td>
+          </tr>
+        `).join('')}
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📈 Key Markets</div>
+      <div class="market-grid">
+        <div class="market-item">
+          <div class="market-name">BTTS Yes</div>
+          <div class="market-value">${(d.scoreProbs.btts*100).toFixed(0)}%</div>
+          <div class="market-odds">Fair: ${(1/d.scoreProbs.btts).toFixed(2)}</div>
+        </div>
+        <div class="market-item">
+          <div class="market-name">BTTS No</div>
+          <div class="market-value">${((1-d.scoreProbs.btts)*100).toFixed(0)}%</div>
+          <div class="market-odds">Fair: ${(1/(1-d.scoreProbs.btts)).toFixed(2)}</div>
+        </div>
+        <div class="market-item">
+          <div class="market-name">Over 2.5</div>
+          <div class="market-value">${(d.scoreProbs.over25*100).toFixed(0)}%</div>
+          <div class="market-odds">Fair: ${(1/d.scoreProbs.over25).toFixed(2)}</div>
+        </div>
+        <div class="market-item">
+          <div class="market-name">Under 2.5</div>
+          <div class="market-value">${((1-d.scoreProbs.over25)*100).toFixed(0)}%</div>
+          <div class="market-odds">Fair: ${(1/(1-d.scoreProbs.over25)).toFixed(2)}</div>
+        </div>
+        <div class="market-item">
+          <div class="market-name">Home Win</div>
+          <div class="market-value">${(d.scoreProbs.homeWin*100).toFixed(0)}%</div>
+          <div class="market-odds">Fair: ${(1/d.scoreProbs.homeWin).toFixed(2)}</div>
+        </div>
+        <div class="market-item">
+          <div class="market-name">Away Win</div>
+          <div class="market-value">${(d.scoreProbs.awayWin*100).toFixed(0)}%</div>
+          <div class="market-odds">Fair: ${(1/d.scoreProbs.awayWin).toFixed(2)}</div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  if (d.bestBet && d.bestBet.ev > 0) {
+    const potential = (d.stake * d.bestBet.odds).toFixed(2);
+    const profit = (potential - d.stake).toFixed(2);
+    const confLevel = d.bestBet.evPct > 15 ? '★★★ LARGE MODEL EDGE (often a data or price error)' : d.bestBet.evPct > 8 ? '★★☆ MEDIUM MODEL EDGE' : '★☆☆ SMALL MODEL EDGE';
+    
+    html += `
+      <div class="value-bet-alert">
+        <div style="font-size:15px; font-weight:700; color:#2ecc71; margin-bottom:10px;">
+          ⚠ HYBRID FLAGS VALUE (read the Advisor above first)
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Selection</span>
+          <span class="stat-value">${d.bestBet.name}</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Odds</span>
+          <span class="stat-value">${d.bestBet.odds}</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Stake</span>
+          <span class="stat-value">GHS ${d.stake}</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Expected Value</span>
+          <span class="stat-value positive">+GHS ${d.bestBet.ev.toFixed(2)}</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Potential Return</span>
+          <span class="stat-value">GHS ${potential}</span>
+        </div>
+        <div style="text-align:center; margin-top:10px; font-weight:700;">${confLevel}</div>
+      </div>
+
+      <button class="btn btn-primary" onclick="trackBet()">📝 Track This Bet</button>
+    `;
+  } else {
+    html += `
+      <div class="no-value-alert">
+        <div style="font-size:15px; font-weight:700; color:#e74c3c;">⚠ NO VALUE FOUND</div>
+        <div style="font-size:12px; margin-top:6px; color:#888;">Recommendation: Skip this match</div>
+      </div>
+    `;
+  }
+
+  content.innerHTML = html;
+}
+
+function trackBet() {
+  if (!lastAnalysis || !lastAnalysis.bestBet) return;
+  
+  const entry = {
+    id: Date.now(),
+    date: new Date().toLocaleDateString(),
+    match: `${lastAnalysis.homeTeam} vs ${lastAnalysis.awayTeam}`,
+    bet: lastAnalysis.bestBet.name,
+    odds: lastAnalysis.bestBet.odds,
+    stake: lastAnalysis.stake,
+    ev: lastAnalysis.bestBet.ev,
+    predictedScore: `${Math.round(lastAnalysis.hybridHome)}-${Math.round(lastAnalysis.hybridAway)}`,
+    context: {
+      competition: lastAnalysis.competition || 'league',
+      hybridProb: lastAnalysis.bestBet.prob,
+      refinedWdl: lastAnalysis.refined ? lastAnalysis.refined.wdl : null,
+      refinedOver: lastAnalysis.refined ? lastAnalysis.refined.over : null,
+      refinedBtts: lastAnalysis.refined ? lastAnalysis.refined.btts : null,
+      odds: lastAnalysis.odds
+    },
+    result: 'pending',
+    profit: 0
+  };
+
+  appData.history.unshift(entry);
+  saveData();
+  updateHistoryDisplay();
+  showToast('✓ Bet tracked! Check History tab');
+}
+
+function setResult(id, result) {
+  const entry = appData.history.find(h => h.id === id);
+  if (!entry) return;
+
+  entry.result = result;
+  if (result === 'won') {
+    entry.profit = entry.stake * (entry.odds - 1);
+    appData.stats.hybridWins++;
+  } else if (result === 'lost') {
+    entry.profit = -entry.stake;
+  }
+  appData.stats.total++;
+  
+  saveData();
+  updateHistoryDisplay();
+  updateStatsDisplay();
+  showToast('✓ Result recorded');
+}
+
+function updateHistoryDisplay() {
+  const list = document.getElementById('historyList');
+  if (appData.history.length === 0) {
+    list.innerHTML = '<div class="empty-state"><div class="icon">📝</div><div>No bets tracked yet</div></div>';
+    return;
+  }
+
+  list.innerHTML = appData.history.map(h => `
+    <div class="history-item ${h.result}">
+      <div style="display:flex; justify-content:space-between; align-items:start;">
+        <div>
+          <div style="font-weight:700; font-size:13px;">${h.match}</div>
+          <div style="font-size:11px; color:#888; margin-top:2px;">${h.date} • Predicted: ${h.predictedScore}</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:12px; font-weight:600;">${h.bet}</div>
+          <div style="font-size:11px; color:#888;">@ ${h.odds}</div>
+        </div>
+      </div>
+      ${h.result === 'pending' ? `
+        <div class="result-buttons">
+          <button class="result-btn selected-win" onclick="setResult(${h.id}, 'won')">Won</button>
+          <button class="result-btn selected-loss" onclick="setResult(${h.id}, 'lost')">Lost</button>
+          <button class="result-btn" onclick="setResult(${h.id}, 'void')">Void</button>
+        </div>
+      ` : `
+        <div style="margin-top:8px; font-weight:700; text-align:right; color:${h.profit >= 0 ? '#2ecc71' : '#e74c3c'};">
+          ${h.profit >= 0 ? '+' : ''}GHS ${h.profit.toFixed(2)}
+        </div>
+      `}
+    </div>
+  `).join('');
+}
+
+function updateStatsDisplay() {
+  const settled = appData.history.filter(h => h.result === 'won' || h.result === 'lost');
+  const wins = settled.filter(h => h.result === 'won').length;
+  const totalProfit = settled.reduce((sum, h) => sum + h.profit, 0);
+  const totalStaked = settled.reduce((sum, h) => sum + h.stake, 0);
+  const winRate = settled.length > 0 ? ((wins / settled.length) * 100).toFixed(1) : 0;
+  const roi = totalStaked > 0 ? ((totalProfit / totalStaked) * 100).toFixed(1) : 0;
+
+  document.getElementById('totalBets').textContent = settled.length;
+  document.getElementById('winRate').textContent = settled.length > 0 ? `${winRate}%` : '-';
+  document.getElementById('totalProfit').textContent = `GHS ${totalProfit.toFixed(2)}`;
+  document.getElementById('totalProfit').className = 'stat-value ' + (totalProfit >= 0 ? 'positive' : 'negative');
+  document.getElementById('roi').textContent = settled.length > 0 ? `${roi}%` : '-';
+  document.getElementById('roi').className = 'stat-value ' + (roi >= 0 ? 'positive' : 'negative');
+}
+
+function clearForm() {
+  document.querySelectorAll('#analyze input').forEach(el => {
+    if (el.type === 'number' && el.id === 'gamesPlayed') el.value = 12;
+    else if (el.type === 'number' && el.id === 'stakeAmount') el.value = 100;
+    else el.value = '';
+  });
+  showToast('Form cleared');
+}
+
+function clearHistory() {
+  if (confirm('Clear all betting history? This cannot be undone.')) {
+    appData.history = [];
+    appData.stats = { hybridWins: 0, goalsWins: 0, xgWins: 0, total: 0 };
+    saveData();
+    updateHistoryDisplay();
+    updateStatsDisplay();
+    showToast('History cleared');
+  }
+}
+
+function updateWeightDisplay() {
+  const val = document.getElementById('xgWeight').value;
+  const xgPct = val;
+  const goalsPct = 100 - val;
+  document.getElementById('weightDisplay').textContent = `xG ${xgPct}% / Goals ${goalsPct}%`;
+}
+
+function saveWeights() {
+  const xgVal = parseInt(document.getElementById('xgWeight').value);
+  appData.weights.xg = xgVal / 100;
+  appData.weights.goals = (100 - xgVal) / 100;
+  saveData();
+  showToast('✓ Weights saved');
+}
+
+// Auto uppercase form inputs
+document.getElementById('homeForm').addEventListener('input', function() {
+  this.value = this.value.toUpperCase().replace(/[^WDL]/g, '');
+});
+document.getElementById('awayForm').addEventListener('input', function() {
+  this.value = this.value.toUpperCase().replace(/[^WDL]/g, '');
+});
+
+
+function setCurrency(cur) {
+  appData.currency = cur;
+  saveData();
+  updateStatsDisplay();
+  updateHistoryDisplay();
+  if (typeof pcRender === 'function') pcRender();
+  showToast('Currency set to ' + cur);
+}
+function saveCurrencyRate() {
+  const r = parseFloat(document.getElementById('usdRate').value) || 15.5;
+  appData.usdRate = r;
+  saveData();
+  showToast('Rate saved: 1 USD = ' + r + ' GHS');
+}
+function toggleAutoDC(checked) {
+  appData.settings = appData.settings || {};
+  appData.settings.autoDoubleChance = checked;
+  saveData();
+  showToast(checked ? 'Auto Double Chance ON at 2.00' : 'Auto Double Chance OFF');
+}
+function convertCurrency(ghsAmount) {
+  const cur = appData.currency || 'GHS';
+  const rate = appData.usdRate || 15.5;
+  if (cur === 'GHS') return {symbol:'GHS ', value:ghsAmount};
+  if (cur === 'USD') return {symbol:'$ ', value:ghsAmount/rate};
+  if (cur === 'EUR') return {symbol:'€ ', value:(ghsAmount/rate)*0.92};
+  if (cur === 'NGN') return {symbol:'₦ ', value:(ghsAmount/rate)*1550};
+  return {symbol:'GHS ', value:ghsAmount};
+}
+function fmtMoney(ghs) {
+  const c = convertCurrency(ghs);
+  return c.symbol + c.value.toFixed(2);
+}
+
+// Override updateStatsDisplay to use currency
+const origUpdateStatsDisplay = updateStatsDisplay;
+updateStatsDisplay = function() {
+  const settled = appData.history.filter(h => h.result === 'won' || h.result === 'lost');
+  const wins = settled.filter(h => h.result === 'won').length;
+  const totalProfitGHS = settled.reduce((sum, h) => sum + h.profit, 0);
+  const totalStakedGHS = settled.reduce((sum, h) => sum + h.stake, 0);
+  const winRate = settled.length > 0 ? ((wins / settled.length) * 100).toFixed(1) : 0;
+  const roi = totalStakedGHS > 0 ? ((totalProfitGHS / totalStakedGHS) * 100).toFixed(1) : 0;
+  document.getElementById('totalBets').textContent = settled.length;
+  document.getElementById('winRate').textContent = settled.length > 0 ? `${winRate}%` : '-';
+  const profitEl = document.getElementById('totalProfit');
+  if (profitEl) {
+    const fmt = convertCurrency(totalProfitGHS);
+    profitEl.textContent = fmt.symbol + fmt.value.toFixed(2) + (appData.currency !== 'GHS' ? ` (${totalProfitGHS>=0?'+':''}GHS ${totalProfitGHS.toFixed(2)})` : '');
+    profitEl.className = 'stat-value ' + (totalProfitGHS >= 0 ? 'positive' : 'negative');
+  }
+  const roiEl = document.getElementById('roi');
+  if (roiEl) {
+    roiEl.textContent = settled.length > 0 ? `${roi}%` : '-';
+    roiEl.className = 'stat-value ' + (roi >= 0 ? 'positive' : 'negative');
+  }
+};
+
+// Auto Double Chance injection in Results
+const origAdvCard = typeof advCard !== 'undefined' ? advCard : null;
+function getDoubleChanceSuggestion(predPick, odds, league) {
+  if (!appData.settings || !appData.settings.autoDoubleChance) return null;
+  if (odds < 1.85 || odds > 2.15) return null;
+  if (predPick === 'H') {
+    return {type:'1X', text:'Home @2.00 fails 55.4% Draw. 1X covers 76.1% vs 46.4% single. Book at ~1.30. Turns -7.5% ROI into -1.1%.', fair:'1.30'};
+  } else if (predPick === 'A') {
+    const awayHomeTilt = ['E0','F1','G1'].includes(league);
+    return {type:'X2', text: awayHomeTilt ? 'Away @2.00 in '+league+' fails 46% Home, 54% Draw. X2 safer but still risky in this league.' : 'Away @2.00 fails 53.6% Draw. X2 covers 76.2% vs 48.6% single.', fair:'1.32'};
+  }
+  return null;
+}
+
+// Patch loadFromMemory to restore currency
+const origLoadFromMemory = loadFromMemory;
+loadFromMemory = function() {
+  origLoadFromMemory();
+  try {
+    const sel = document.getElementById('currencySelect');
+    if (sel && appData.currency) sel.value = appData.currency;
+    const rateEl = document.getElementById('usdRate');
+    if (rateEl && appData.usdRate) rateEl.value = appData.usdRate;
+    const dcCompEl = document.getElementById('showDCComparison');
+    if (dcCompEl && appData.settings) dcCompEl.checked = appData.settings.showDCComparison !== false;
+    const dcEl = document.getElementById('autoDoubleChance');
+    if (dcEl && appData.settings) dcEl.checked = !!appData.settings.autoDoubleChance;
+  } catch(e){}
+};
+
+
+async function fetchLiveRate() {
+  const btn = document.getElementById('fetchRateBtn');
+  const status = document.getElementById('rateStatus');
+  try {
+    if (btn) { btn.textContent = 'Fetching...'; btn.disabled = true; }
+    if (status) status.textContent = 'Fetching live USD/GHS...';
+    // Free API no key: exchangerate-api
+    const res = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
+    const data = await res.json();
+    if (data && data.rates && data.rates.GHS) {
+      const rate = data.rates.GHS;
+      document.getElementById('usdRate').value = rate.toFixed(2);
+      appData.usdRate = rate;
+      appData.rateUpdated = new Date().toISOString();
+      saveData();
+      if (status) status.textContent = `Live: 1 USD = ${rate.toFixed(2)} GHS (updated ${new Date().toLocaleString()})`;
+      showToast('Live rate: 1 USD = ' + rate.toFixed(2) + ' GHS');
+      updateStatsDisplay();
+      updateHistoryDisplay();
+    } else {
+      throw new Error('No GHS rate');
+    }
+  } catch (e) {
+    if (status) status.textContent = 'Failed to fetch live rate, using manual. Check internet.';
+    showToast('Failed live rate, check internet');
+    // fallback try another API
+    try {
+      const res2 = await fetch('https://open.er-api.com/v6/latest/USD');
+      const data2 = await res2.json();
+      if (data2 && data2.rates && data2.rates.GHS) {
+        const rate = data2.rates.GHS;
+        document.getElementById('usdRate').value = rate.toFixed(2);
+        appData.usdRate = rate;
+        appData.rateUpdated = new Date().toISOString();
+        saveData();
+        if (status) status.textContent = `Live: 1 USD = ${rate.toFixed(2)} GHS`;
+        showToast('Live rate: ' + rate.toFixed(2));
+      }
+    } catch(e2){}
+  } finally {
+    if (btn) { btn.textContent = 'Fetch live USD/GHS'; btn.disabled = false; }
+  }
+}
+// Auto fetch on first load if rate older than 24h
+async function autoFetchRateIfNeeded() {
+  const last = appData.rateUpdated ? new Date(appData.rateUpdated).getTime() : 0;
+  const now = Date.now();
+  if (now - last > 24*60*60*1000) {
+    setTimeout(fetchLiveRate, 1500);
+  }
+}
+
+
+function toggleDCComparison(checked) {
+  appData.settings = appData.settings || {};
+  appData.settings.showDCComparison = checked;
+  saveData();
+  showToast(checked ? 'DC comparison ON' : 'DC comparison OFF');
+}
+function getDCStats(pickOdds, pick) {
+  // Based on CSV 20,354 preds
+  const buckets = [
+    {max:1.5, single:76.7, dc:92.2, dcOdds:1.11},
+    {max:1.8, single:60.3, dc:83.5, dcOdds:1.22},
+    {max:2.0, single:51.0, dc:78.3, dcOdds:1.30},
+    {max:2.2, single:44.7, dc:75.0, dcOdds:1.36},
+    {max:3.0, single:39.2, dc:68.1, dcOdds:1.48},
+    {max:10, single:28.8, dc:56.0, dcOdds:1.75}
+  ];
+  for (let b of buckets) {
+    if (pickOdds <= b.max) return b;
+  }
+  return buckets[buckets.length-1];
+}
+
+// Auto fetch rate on load
+setTimeout(autoFetchRateIfNeeded, 2000);
+// Initialize
+loadFromMemory();
+updateStatsDisplay();
+updateHistoryDisplay();
+</script>
+
+</body>
+</html>
